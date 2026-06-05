@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SimCombat Pro - 军事仿真推演系统</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+  <!-- 顶部标题栏 -->
+  <header class="header">
+    <h1>🎯 SimCombat Pro - 军事仿真推演系统</h1>
+    <div class="connection-status disconnected" id="connection">未连接</div>
+  </header>
+
+  <div class="main-container">
+    <!-- 左侧面板 -->
+    <aside class="control-panel">
+      <section class="panel-section">
+        <h3>📊 推演控制</h3>
+        <div class="btn-group">
+          <button id="btnStart" class="btn btn-primary">▶ 开始推演</button>
+          <button id="btnStop" class="btn btn-danger">⏹ 停止</button>
+          <button id="btnStep" class="btn btn-secondary">⏭ 单步</button>
+          <button id="btnReset" class="btn btn-warning">🔄 重置</button>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h3>⚙️ 视图设置</h3>
+        <div class="setting-row">
+          <label>视图模式:</label>
+          <select id="viewMode">
+            <option value="map2d">2D作战地图</option>
+            <option value="3d">3D态势视图</option>
+            <option value="split">分屏显示</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label><input type="checkbox" id="showLabels" checked> 显示标签</label>
+        </div>
+        <div class="setting-row">
+          <label><input type="checkbox" id="showRange"> 显示射程</label>
+        </div>
+        <div class="setting-row">
+          <label><input type="checkbox" id="showTerrain" checked> 显示地形</label>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h3>📁 数据操作</h3>
+        <div class="btn-group">
+          <button id="btnLoad" class="btn btn-secondary">📂 加载想定</button>
+          <button id="btnSave" class="btn btn-secondary">💾 保存推演</button>
+          <button id="btnReplay" class="btn btn-info">📹 回放</button>
+        </div>
+        <input type="file" id="fileInput" style="display:none" accept=".json">
+      </section>
+
+      <section class="panel-section">
+        <h3>📈 实时统计</h3>
+        <div class="stats-grid">
+          <div class="stat-box red">
+            <label>红军兵力</label>
+            <span id="redUnits">0</span>
+          </div>
+          <div class="stat-box blue">
+            <label>蓝军兵力</label>
+            <span id="blueUnits">0</span>
+          </div>
+          <div class="stat-box">
+            <label>仿真时间</label>
+            <span id="simTime">0s</span>
+          </div>
+          <div class="stat-box">
+            <label>当前帧号</label>
+            <span id="frameCount">0</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h3>📋 单位详情</h3>
+        <div id="selectedEntity">
+          <p class="no-selection">点击地图上的单位查看详情</p>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h3>📜 推演日志</h3>
+        <div id="logPanel" class="log-panel"></div>
+      </section>
+    </aside>
+
+    <!-- 主视图区 -->
+    <div class="viewer-container">
+      <!-- 2D地图视图 -->
+      <div id="map2d" class="view active"></div>
+
+      <!-- 3D视图 -->
+      <div id="view3d" class="view"></div>
+
+      <!-- 回放控制条 -->
+      <div class="replay-bar" id="replayBar" style="display:none">
+        <button id="replayPlay">▶</button>
+        <input type="range" id="replaySlider" min="0" max="100" value="0">
+        <span id="replayTime">0:00 / 0:00</span>
+        <button id="replayClose">✕</button>
+      </div>
+    </div>
+
+    <!-- 右侧统计大屏 -->
+    <aside class="stats-panel">
+      <h3>📊 战损统计大屏</h3>
+
+      <div class="stats-card">
+        <h4>⚔️ 兵力损失对比</h4>
+        <div class="casualty-bar">
+          <div class="bar-segment red" id="redCasualtyBar" style="width:50%"></div>
+          <div class="bar-segment blue" id="blueCasualtyBar" style="width:50%"></div>
+        </div>
+        <div class="casualty-numbers">
+          <span class="red">红: <b id="redCasualties">0</b></span>
+          <span class="blue">蓝: <b id="blueCasualties">0</b></span>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <h4>💥 伤害输出统计</h4>
+        <div class="damage-stats">
+          <div class="damage-row red">
+            <span>红军伤害:</span>
+            <span id="redDamage" class="value">0</span>
+          </div>
+          <div class="damage-row blue">
+            <span>蓝军伤害:</span>
+            <span id="blueDamage" class="value">0</span>
+          </div>
+        </div>
+        <canvas id="damageChart" width="250" height="60"></canvas>
+      </div>
+
+      <div class="stats-card">
+        <h4>💰 战力价值</h4>
+        <div class="value-chart">
+          <div class="value-progress">
+            <div class="progress-label red">红军 <span id="redValue">0</span></div>
+            <div class="progress-bar">
+              <div id="redValueBar" style="width:50%"></div>
+            </div>
+          </div>
+          <div class="value-progress">
+            <div class="progress-label blue">蓝军 <span id="blueValue">0</span></div>
+            <div class="progress-bar">
+              <div id="blueValueBar" style="width:50%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <h4>🎯 实时态势</h4>
+        <div class="battle-status">
+          <div class="status-row">
+            <span class="label">推演状态:</span>
+            <span id="statusText" class="badge stopped">待机</span>
+          </div>
+          <div class="status-row">
+            <span class="label">交火次数:</span>
+            <span id="engagementCount" class="value">0</span>
+          </div>
+          <div class="status-row">
+            <span class="label">战术主导:</span>
+            <span id="dominantSide" class="value">均势</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <h4>🏆 推演结论</h4>
+        <div id="conclusion" class="conclusion">
+          <p class="pending">推演准备就绪</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- 主程序 -->
+  <script src="js/Map2D.js"></script>
+  <script src="js/View3D.js"></script>
+  <script src="js/StatsPanel.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
