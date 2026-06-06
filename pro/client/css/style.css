@@ -26,6 +26,36 @@ body {
   text-shadow: 0 0 10px rgba(233, 69, 96, 0.3);
 }
 
+/* 工具栏 */
+.toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.btn-toolbar {
+  padding: 6px 14px;
+  background: #30363d;
+  color: #c9d1d9;
+  border: 1px solid #484f58;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.btn-toolbar:hover {
+  background: #3d444d;
+  border-color: #e94560;
+  color: #fff;
+}
+
+.btn-toolbar.active {
+  background: #e94560;
+  color: #fff;
+  border-color: #e94560;
+}
+
 .connection-status {
   padding: 4px 12px;
   border-radius: 12px;
@@ -141,6 +171,79 @@ body {
 .entity-info .entity-header.blue { background: rgba(31, 111, 235, 0.2); border: 1px solid #1f6feb; }
 .entity-info .entity-id { font-weight: bold; }
 .entity-info .entity-type { font-size: 10px; opacity: 0.8; }
+
+/* 想定编辑器 */
+.scenario-editor .editor-mode,
+.scenario-editor .unit-selector {
+  margin-bottom: 10px;
+}
+
+.scenario-editor label {
+  display: block;
+  font-size: 12px;
+  color: #8b949e;
+  margin-bottom: 4px;
+}
+
+.scenario-editor select {
+  width: 100%;
+  padding: 6px 8px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.scenario-editor select optgroup {
+  background: #21262d;
+  color: #f0883e;
+}
+
+.scenario-editor select option {
+  background: #0d1117;
+  color: #c9d1d9;
+}
+
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.editor-actions .btn-small {
+  padding: 6px 10px;
+  font-size: 11px;
+  flex: 1;
+  min-width: 80px;
+}
+
+.editor-hint {
+  margin-top: 10px;
+  padding: 8px;
+  background: rgba(240, 136, 62, 0.1);
+  border-left: 3px solid #f0883e;
+  border-radius: 0 4px 4px 0;
+  font-size: 11px;
+  color: #c9d1d9;
+}
+
+/* 预设想定 */
+.preset-scenarios select {
+  width: 100%;
+  padding: 8px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.preset-scenarios select option {
+  background: #0d1117;
+  color: #c9d1d9;
+}
 
 .info-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 10px; }
 .info-grid .label { color: #8b949e; }
@@ -328,8 +431,288 @@ body {
 
 /* Leaflet自定义样式 */
 .leaflet-container { background: #0d1117; }
-.leaflet-popup-content-wrapper { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
-.leaflet-popup-tip { background: #21262d; }
+
+/* 实体悬浮窗样式 */
+.entity-popup .leaflet-popup-content-wrapper {
+  background: rgba(22, 27, 34, 0.95);
+  color: #c9d1d9;
+  border: 1px solid #e94560;
+  border-radius: 8px;
+  padding: 0;
+}
+
+.entity-popup .leaflet-popup-content {
+  margin: 8px 12px;
+}
+
+.entity-popup .leaflet-popup-tip {
+  background: rgba(22, 27, 34, 0.95);
+  border: 1px solid #e94560;
+}
+
+/* 实体鼠标悬停提示 */
+.entity-tooltip {
+  background: rgba(22, 27, 34, 0.9);
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #c9d1d9;
+  padding: 6px 10px;
+  font-size: 11px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.entity-tooltip .leaflet-tooltip-top:before {
+  border-top-color: rgba(22, 27, 34, 0.9);
+}
+
+/* 射程、视野、雷达范围圆圈样式 */
+.range-circle {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.vision-circle {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.radar-circle {
+  animation: radarSweep 3s linear infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 0.4; }
+}
+
+@keyframes radarSweep {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.3; }
+}
+
+/* 攻击线动画 */
+.attack-line {
+  animation: dash 0.5s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -15;
+  }
+}
+
+/* 命中效果 */
+@keyframes hitPulse {
+  0% { transform: scale(0.5); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+.hit-effect {
+  animation: hitPulse 0.5s ease-out forwards;
+}
+
+/* 3D视图控制提示 */
+.view3d-hints {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(22, 27, 34, 0.9);
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 12px;
+  z-index: 100;
+  font-size: 11px;
+  backdrop-filter: blur(4px);
+}
+
+.view3d-hints .hint-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: #c9d1d9;
+}
+
+.view3d-hints .hint-item:last-child {
+  margin-bottom: 0;
+}
+
+.hint-key {
+  background: #30363d;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* 2D地图实体图标样式优化 */
+.leaflet-marker-icon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  transition: transform 0.2s;
+}
+
+.leaflet-marker-icon:hover {
+  transform: scale(1.2);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.7));
+  z-index: 1000 !important;
+}
+
+/* 演习区域标签 */
+.exercise-area-label {
+  pointer-events: none;
+}
+
+/* 实体状态颜色 */
+.status-idle { color: #8b949e; }
+.status-moving { color: #58a6ff; }
+.status-attacking { color: #f85149; }
+.status-deployed { color: #7ee787; }
+.status-patrolling { color: #ffa657; }
+.status-retreating { color: #a371f7; }
+
+/* 实体详细信息面板 */
+.entity-details {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #30363d;
+}
+
+.entity-details h5 {
+  font-size: 11px;
+  color: #f0883e;
+  margin: 10px 0 6px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #30363d;
+}
+
+.weapon-stats, .detection-stats, .defense-stats {
+  background: #0d1117;
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding: 3px 0;
+}
+
+.stat-row .stat-label {
+  color: #8b949e;
+}
+
+.stat-row .stat-value {
+  font-weight: bold;
+  color: #fff;
+}
+
+.stat-row .weapons-range { color: #f85149; }
+.stat-row .weapons-damage { color: #f85149; }
+.stat-row .weapons-accuracy { color: #58a6ff; }
+.stat-row .detection-vision { color: #ffa657; }
+.stat-row .detection-radar { color: #58a6ff; }
+.stat-row .defense-armor { color: #7ee787; }
+.stat-row .defense-evasion { color: #7ee787; }
+
+/* 状态效果标签 */
+.effect-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  margin: 4px 0;
+}
+
+.effect-badge.deployed {
+  background: rgba(126, 231, 135, 0.2);
+  color: #7ee787;
+  border: 1px solid #7ee787;
+}
+
+/* 探测到的目标列表 */
+.contacts-list {
+  margin-top: 10px;
+}
+
+.contacts-list h5 {
+  margin-bottom: 6px;
+}
+
+.contact-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  margin: 4px 0;
+  background: #0d1117;
+  border-radius: 4px;
+  font-size: 11px;
+  border-left: 3px solid #6e7681;
+}
+
+.contact-item.red {
+  border-left-color: #da3633;
+}
+
+.contact-item.blue {
+  border-left-color: #1f6feb;
+}
+
+.contact-item span {
+  color: #c9d1d9;
+}
+
+.contact-item button {
+  padding: 2px 8px;
+  font-size: 10px;
+  background: #da3633;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.contact-item button:hover {
+  background: #f85149;
+}
+
+.no-contacts {
+  padding: 12px;
+  text-align: center;
+  color: #6e7681;
+  font-style: italic;
+  font-size: 11px;
+}
+
+/* 实体命令按钮 */
+.entity-commands {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #30363d;
+}
+
+.entity-commands .btn {
+  flex: 1;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.entity-details-loading {
+  padding: 10px;
+  text-align: center;
+  color: #8b949e;
+  font-size: 11px;
+}
 
 /* 滚动条 */
 ::-webkit-scrollbar { width: 8px; }

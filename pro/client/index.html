@@ -14,6 +14,14 @@
   <!-- 顶部标题栏 -->
   <header class="header">
     <h1>🎯 SimCombat Pro - 军事仿真推演系统</h1>
+    <nav class="toolbar">
+      <button id="btnSetArea" class="btn btn-toolbar" title="划定演习区域">
+        📍 划定演习区域
+      </button>
+      <button id="btnResetArea" class="btn btn-toolbar" title="重置演习区域">
+        🔄 重置区域
+      </button>
+    </nav>
     <div class="connection-status disconnected" id="connection">未连接</div>
   </header>
 
@@ -31,7 +39,21 @@
       </section>
 
       <section class="panel-section">
-        <h3>⚙️ 视图设置</h3>
+        <h3>⚙️ 推演模式</h3>
+        <div class="setting-row">
+          <label>模式选择:</label>
+          <select id="simMode">
+            <option value="exercise">演习模式</option>
+            <option value="combat">实战模式</option>
+          </select>
+        </div>
+        <div id="modeHint" class="mode-hint" style="margin-top:8px; padding:8px; background:#0d1117; border-radius:4px; font-size:11px; border-left:3px solid #f0883e;">
+          💡 演习模式：请先划定演习区域，配置兵力后再开始推演
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h3>👁️ 视图设置</h3>
         <div class="setting-row">
           <label>视图模式:</label>
           <select id="viewMode">
@@ -48,6 +70,68 @@
         </div>
         <div class="setting-row">
           <label><input type="checkbox" id="showTerrain" checked> 显示地形</label>
+        </div>
+        <div class="legend" style="margin-top:10px; padding:8px; background:#0d1117; border-radius:4px; font-size:11px;">
+          <div style="margin-bottom:4px; color:#8b949e;">📍 图例说明:</div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <span style="display:flex; align-items:center; gap:4px;">
+              <span style="width:12px; height:12px; border:2px dashed #ff6b6b; border-radius:50%; opacity:0.6;"></span>
+              <span>武器射程</span>
+            </span>
+            <span style="display:flex; align-items:center; gap:4px;">
+              <span style="width:12px; height:12px; border:2px dashed #339af0; border-radius:50%; opacity:0.5;"></span>
+              <span>雷达范围</span>
+            </span>
+            <span style="display:flex; align-items:center; gap:4px;">
+              <span style="width:12px; height:12px; background:rgba(255,135,135,0.2); border-radius:50%;"></span>
+              <span>视野范围</span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 想定编辑器 -->
+      <section class="panel-section scenario-editor">
+        <h3>📝 想定编辑器</h3>
+        <div class="editor-mode">
+          <label>编辑模式:</label>
+          <select id="editorMode">
+            <option value="view">仅查看</option>
+            <option value="addRed">添加红军</option>
+            <option value="addBlue">添加蓝军</option>
+            <option value="remove">删除单位</option>
+          </select>
+        </div>
+        <div class="unit-selector" id="unitSelector" style="display:none">
+          <label>选择单位:</label>
+          <select id="unitType">
+            <optgroup label="地面单位">
+              <option value="infantry">🪖 步兵班</option>
+              <option value="tank">🛡️ 主战坦克</option>
+              <option value="apc">🚛 装甲运兵车</option>
+              <option value="artillery">💥 自行火炮</option>
+              <option value="air_defense">🎯 防空导弹</option>
+            </optgroup>
+            <optgroup label="空中单位">
+              <option value="fighter">✈️ 战斗机</option>
+              <option value="bomber">🚀 轰炸机</option>
+              <option value="helicopter">🚁 武装直升机</option>
+              <option value="uav">📡 侦察无人机</option>
+            </optgroup>
+            <optgroup label="海上单位">
+              <option value="destroyer">🚢 驱逐舰</option>
+              <option value="submarine">🔱 攻击潜艇</option>
+              <option value="carrier">🛳️ 航空母舰</option>
+              <option value="landing_ship">⛴️ 两栖攻击舰</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="editor-actions">
+          <button id="btnClearAll" class="btn btn-danger btn-small">🗑️ 清空所有</button>
+          <button id="btnSaveScenario" class="btn btn-secondary btn-small">💾 保存想定</button>
+        </div>
+        <div class="editor-hint" id="editorHint">
+          💡 选择"添加红军/蓝军"后点击地图放置单位
         </div>
       </section>
 
@@ -77,16 +161,36 @@
             <span id="simTime">0s</span>
           </div>
           <div class="stat-box">
-            <label>当前帧号</label>
-            <span id="frameCount">0</span>
+            <label>实体数量</label>
+            <span id="entityCount">0</span>
           </div>
+        </div>
+        <div class="btn-group" style="margin-top:12px">
+          <button id="btnViewRed" class="btn btn-danger" style="flex:1">🔴 查看红方位置</button>
+          <button id="btnViewBlue" class="btn btn-primary" style="flex:1">🔵 查看蓝方位置</button>
         </div>
       </section>
 
       <section class="panel-section">
-        <h3>📋 单位详情</h3>
+        <h3>📋 单位实时状态</h3>
         <div id="selectedEntity">
-          <p class="no-selection">点击地图上的单位查看详情</p>
+          <p class="no-selection">💡 点击地图上的单位查看实时作战动作<br/>包括发现目标、攻击状态、移动方向等</p>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h3>🎯 预设想定</h3>
+        <div class="preset-scenarios">
+          <select id="presetScenario">
+            <option value="">-- 选择预设想定 --</option>
+            <option value="skirmish">遭遇战 (小规模)</option>
+            <option value="assault">进攻作战 (中规模)</option>
+            <option value="combined">联合作战 (大规模)</option>
+            <option value="naval">海空对抗</option>
+            <option value="asymmetric">非对称作战</option>
+            <option value="air_superiority">制空权争夺</option>
+          </select>
+          <button id="btnLoadPreset" class="btn btn-secondary" style="margin-top:8px; width:100%">📥 加载预设想定</button>
         </div>
       </section>
 
@@ -102,7 +206,14 @@
       <div id="map2d" class="view active"></div>
 
       <!-- 3D视图 -->
-      <div id="view3d" class="view"></div>
+      <div id="view3d" class="view">
+        <div class="view3d-hints">
+          <div class="hint-item"><span class="hint-key">🖱️ 左键拖动</span> 旋转视角</div>
+          <div class="hint-item"><span class="hint-key">🖱️ 右键拖动</span> 平移视角</div>
+          <div class="hint-item"><span class="hint-key">⚙️ 滚轮</span> 缩放视角</div>
+          <div class="hint-item"><span class="hint-key">👆 点击</span> 选择单位</div>
+        </div>
+      </div>
 
       <!-- 回放控制条 -->
       <div class="replay-bar" id="replayBar" style="display:none">
@@ -191,6 +302,8 @@
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- 攻击动画 -->
+  <script src="js/AttackAnimations.js"></script>
   <!-- 主程序 -->
   <script src="js/Map2D.js"></script>
   <script src="js/View3D.js"></script>

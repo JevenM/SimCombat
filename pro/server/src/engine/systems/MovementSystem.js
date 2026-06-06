@@ -73,20 +73,29 @@ class MovementSystem {
         }
       }
 
-      // 计算最大速度
+      // 计算最大速度 (km/h 转换为 m/s，假设 dt=1s)
       const terrainMod = this.terrain.getMovementSpeedModifier(
         entity.x, entity.y, entity.mobilityType
       );
-      const maxSpeed = (entity.speed || 10) * terrainMod;
+      // 注意: entity.speed 是 km/h，需要转换为 m/s，然后乘以 dt(秒)
+      const maxSpeed = ((entity.speed || 10) * 1000 / 3600) * terrainMod; // 转换为 m/s
 
-      // 设置速度
+      // 设置速度向量 (m/s)
       entity.vx = (dx / dist) * maxSpeed;
       entity.vy = (dy / dist) * maxSpeed;
+
+      // 立即更新航向
+      entity.heading = (Math.atan2(entity.vy, entity.vx) * 180 / Math.PI + 360) % 360;
     }
 
     // 应用速度
     const actualVx = entity.vx * dt;
     const actualVy = entity.vy * dt;
+
+    // 更新航向（角度，0-360度）
+    if (entity.vx !== 0 || entity.vy !== 0) {
+      entity.heading = (Math.atan2(entity.vy, entity.vx) * 180 / Math.PI + 360) % 360;
+    }
 
     // 检查新位置是否可通行
     const newX = entity.x + actualVx;

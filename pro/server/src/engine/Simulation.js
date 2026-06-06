@@ -13,6 +13,7 @@ const { getEquipment, getDamageModifier } = require('../data/equipment/Database'
 class Simulation {
   constructor(config = {}) {
     this.time = 0;
+    this.stepCount = 0;  // 仿真步数计数器
     this.dt = config.dt || 1;
     this.isRunning = false;
     this.intervalId = null;
@@ -245,32 +246,28 @@ class Simulation {
     this.recordFrame();
   }
 
-  // 生成示例想定
+  // 生成示例想定 - 小规模近距离对战
   sampleScenario() {
     return {
-      name: '红蓝对抗样本想定',
+      name: '小规模遭遇战想定',
       terrain: {
-        elevation: [], // 使用默认地形
+        elevation: [],
         terrainType: []
       },
       entities: [
-        // 红军（进攻方）
-        { id: 'r1', side: 'red', equipmentType: 'tank', x: 1000, y: 1000, aiType: 'combat' },
-        { id: 'r2', side: 'red', equipmentType: 'tank', x: 1100, y: 1050, aiType: 'combat' },
-        { id: 'r3', side: 'red', equipmentType: 'apc', x: 1050, y: 1100, aiType: 'combat' },
-        { id: 'r4', side: 'red', equipmentType: 'infantry', x: 1020, y: 1080, aiType: 'combat' },
-        { id: 'r5', side: 'red', equipmentType: 'infantry', x: 1080, y: 1020, aiType: 'combat' },
-        { id: 'r6', side: 'red', equipmentType: 'artillery', x: 800, y: 800, aiType: 'artillery' },
-        { id: 'r7', side: 'red', equipmentType: 'uav', x: 1200, y: 1200, z: 300, aiType: 'scout' },
+        // 红军（西侧）- 距离蓝军约800米
+        { id: 'r1', side: 'red', equipmentType: 'tank', x: 4500, y: 5000, aiType: 'combat' },
+        { id: 'r2', side: 'red', equipmentType: 'tank', x: 4600, y: 5100, aiType: 'combat' },
+        { id: 'r3', side: 'red', equipmentType: 'apc', x: 4400, y: 4900, aiType: 'combat' },
+        { id: 'r4', side: 'red', equipmentType: 'infantry', x: 4550, y: 4950, aiType: 'combat' },
+        { id: 'r5', side: 'red', equipmentType: 'infantry', x: 4650, y: 5050, aiType: 'combat' },
 
-        // 蓝军（防御方）
-        { id: 'b1', side: 'blue', equipmentType: 'tank', x: 6000, y: 6000, aiType: 'defensive' },
-        { id: 'b2', side: 'blue', equipmentType: 'tank', x: 6100, y: 5950, aiType: 'defensive' },
-        { id: 'b3', side: 'blue', equipmentType: 'apc', x: 6050, y: 6050, aiType: 'defensive' },
-        { id: 'b4', side: 'blue', equipmentType: 'infantry', x: 6020, y: 6020, aiType: 'defensive' },
-        { id: 'b5', side: 'blue', equipmentType: 'infantry', x: 6080, y: 5980, aiType: 'defensive' },
-        { id: 'b6', side: 'blue', equipmentType: 'air_defense', x: 6200, y: 5800, aiType: 'defensive' },
-        { id: 'b7', side: 'blue', equipmentType: 'fighter', x: 5000, y: 5000, z: 5000, aiType: 'combat' }
+        // 蓝军（东侧）- 距离红军约800米
+        { id: 'b1', side: 'blue', equipmentType: 'tank', x: 5300, y: 5000, aiType: 'defensive' },
+        { id: 'b2', side: 'blue', equipmentType: 'tank', x: 5400, y: 5100, aiType: 'defensive' },
+        { id: 'b3', side: 'blue', equipmentType: 'apc', x: 5200, y: 4900, aiType: 'defensive' },
+        { id: 'b4', side: 'blue', equipmentType: 'infantry', x: 5350, y: 4950, aiType: 'defensive' },
+        { id: 'b5', side: 'blue', equipmentType: 'infantry', x: 5250, y: 5050, aiType: 'defensive' }
       ]
     };
   }
@@ -278,9 +275,13 @@ class Simulation {
   // 单步仿真
   step() {
     this.time += this.dt;
+    this.stepCount++;
     this.blackboard.time = this.time;
 
-    // 1. 感知更新
+    // 清空上一帧的战斗事件
+    this.blackboard.combatEvents = [];
+
+    // 1. 感知更新 - 所有单位探测敌情
     this.perception.updatePerception(this.entities);
 
     // 2. AI行为决策
@@ -296,31 +297,8 @@ class Simulation {
     // 3. 运动更新
     this.movement.updateMovement(this.entities, this.dt);
 
-    // 4. 战斗裁决
-    for (const entity of this.entities) {
-      if (entity.hp <= 0) continue;
-
-      // 如果有目标且目标存活，尝试攻击
-      if (this.blackboard.target && this.blackboard.target.hp > 0) {
-        const result = this.combat.resolveDirectFire(entity, this.blackboard.target, this.dt);
-        if (result) {
-          this.updateDamageStats(entity.side, result.damage);
-        }
-      }
-
-      // 检查攻击接触到的敌人
-      if (entity.detectedContacts) {
-        for (const contact of entity.detectedContacts) {
-          const target = this.entities.find(e => e.id === contact.id);
-          if (target && target.hp > 0 && target.side !== entity.side) {
-            const result = this.combat.resolveDirectFire(entity, target, this.dt);
-            if (result) {
-              this.updateDamageStats(entity.side, result.damage);
-            }
-          }
-        }
-      }
-    }
+    // 4. 自动目标识别与攻击
+    this.processAutoEngagement();
 
     // 5. 更新统计
     this.updateStats();
@@ -334,6 +312,117 @@ class Simulation {
     this.checkEndConditions();
 
     return this.getState();
+  }
+
+  // 自动目标识别与交战处理
+  processAutoEngagement() {
+    for (const entity of this.entities) {
+      if (entity.hp <= 0) continue;
+
+      // 部署状态自动攻击范围内目标
+      if (entity.status === 'deployed' || entity.status === 'attacking' || entity.aiType === 'defensive') {
+        const target = this.findBestTarget(entity);
+        if (target) {
+          const result = this.combat.resolveDirectFire(entity, target, this.dt);
+          if (result) {
+            this.updateDamageStats(entity.side, result.damage);
+            this.blackboard.combatEvents.push({
+              step: this.stepCount,
+              time: this.time,
+              attacker: entity.id,
+              attackerName: entity.name,
+              attackerSide: entity.side,
+              target: target.id,
+              targetName: target.name,
+              damage: Math.round(result.damage),
+              hit: result.hit,
+              distance: Math.round(result.distance)
+            });
+
+            if (target.hp <= 0) {
+              this.recordKill(entity, target);
+            }
+          }
+        }
+      }
+
+      // 移动接近目标时自动开火
+      if (entity.status === 'moving' && entity.moveTarget) {
+        const target = this.findBestTarget(entity);
+        if (target && Math.hypot(target.x - entity.x, target.y - entity.y) <= entity.range * 0.8) {
+          const result = this.combat.resolveDirectFire(entity, target, this.dt);
+          if (result) {
+            this.updateDamageStats(entity.side, result.damage);
+            this.blackboard.combatEvents.push({
+              step: this.stepCount,
+              time: this.time,
+              attacker: entity.id,
+              attackerName: entity.name,
+              attackerSide: entity.side,
+              target: target.id,
+              targetName: target.name,
+              damage: Math.round(result.damage),
+              hit: result.hit,
+              distance: Math.round(result.distance)
+            });
+
+            if (target.hp <= 0) {
+              this.recordKill(entity, target);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // 寻找最佳目标（射程内、优先级高）
+  findBestTarget(entity) {
+    const enemies = entity.detectedContacts || [];
+    let bestTarget = null;
+    let bestScore = -Infinity;
+
+    for (const contact of enemies) {
+      const target = this.entities.find(e => e.id === contact.id);
+      if (!target || target.hp <= 0 || target.side === entity.side) continue;
+
+      const dist = Math.hypot(target.x - entity.x, target.y - entity.y);
+
+      // 超出射程
+      if (dist > entity.range) continue;
+
+      // 评分：距离近的优先，高威胁的优先（按火力/血量）
+      const threatLevel = (target.damage || 0) / (target.hp || 1);
+      const distanceScore = 1 - (dist / entity.range);
+      const score = distanceScore * 10 + threatLevel * 5;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestTarget = target;
+      }
+    }
+
+    return bestTarget;
+  }
+
+  // 记录击杀
+  recordKill(attacker, victim) {
+    if (victim.side === 'red') {
+      this.stats.blueCasualties++;
+    } else {
+      this.stats.redCasualties++;
+    }
+
+    this.blackboard.combatEvents.push({
+      step: this.stepCount,
+      time: this.time,
+      type: 'kill',
+      killer: attacker.id,
+      killerName: attacker.name,
+      killerSide: attacker.side,
+      victim: victim.id,
+      victimName: victim.name,
+      victimSide: victim.side
+    });
   }
 
   updateDamageStats(side, damage) {
@@ -372,8 +461,24 @@ class Simulation {
     const redUnits = this.entities.filter(e => e.side === 'red' && e.hp > 0 && e.type !== 'air');
     const blueUnits = this.entities.filter(e => e.side === 'blue' && e.hp > 0 && e.type !== 'air');
 
-    if (redUnits.length === 0 || blueUnits.length === 0) {
+    let winner = null;
+    let reason = '';
+
+    if (redUnits.length === 0 && blueUnits.length === 0) {
+      winner = 'draw';
+      reason = '双方地面部队全部损失';
+    } else if (redUnits.length === 0) {
+      winner = 'blue';
+      reason = '红军地面部队全部被歼灭';
+    } else if (blueUnits.length === 0) {
+      winner = 'red';
+      reason = '蓝军地面部队全部被歼灭';
+    }
+
+    if (winner) {
       this.stats.endTime = Date.now();
+      this.stats.winner = winner;
+      this.stats.endReason = reason;
       this.stop();
     }
   }
@@ -428,6 +533,7 @@ class Simulation {
   // 获取状态
   getState() {
     return {
+      stepCount: this.stepCount,
       time: this.time,
       isRunning: this.isRunning,
       entities: this.entities.map(e => ({
@@ -440,12 +546,21 @@ class Simulation {
         y: Math.round(e.y),
         z: Math.round(e.z || 0),
         heading: Math.round(e.heading * 10) / 10,
+        speed: Math.round(Math.hypot(e.vx || 0, e.vy || 0) * 10) / 10,
         hp: Math.round(e.hp),
         maxHp: e.maxHp,
+        range: e.range,
+        vision: e.vision,
+        detection: e.detection,
+        damage: e.damage,
+        fireRate: e.fireRate,
+        accuracy: e.accuracy,
+        armor: e.armor,
         status: e.status,
         detectedContacts: e.detectedContacts?.length || 0
       })),
       stats: this.stats,
+      combatEvents: this.blackboard.combatEvents || [],
       terrain: this.terrain ? {
         width: this.terrain.width,
         height: this.terrain.height,
@@ -470,25 +585,118 @@ class Simulation {
     };
   }
 
-  // 从保存的状态导入
-  importState(state) {
-    this.time = state.time || 0;
-    this.entities = state.entities || [];
-    this.stats = state.stats || {};
-    this.replay = state.replay || [];
+  // 命令实体移动
+  commandMove(entityId, targetX, targetY) {
+    const entity = this.entities.find(e => e.id === entityId);
+    if (!entity || entity.hp <= 0) return false;
 
-    if (state.terrain) {
-      this.terrain.loadFromData(state.terrain.elevation, state.terrain.terrainType);
-    }
+    entity.moveTarget = { x: targetX, y: targetY };
+    entity.attackTarget = null;
+    entity.aiOverride = true;
+    entity.status = 'moving';
 
-    // 重新创建行为树
-    this.entityBehaviors.clear();
-    for (const entity of this.entities) {
-      const aiTemplate = this.aiTemplates[entity.aiType];
-      if (aiTemplate) {
-        this.entityBehaviors.set(entity.id, aiTemplate(entity, this.blackboard));
+    return true;
+  }
+
+  // 命令实体攻击特定目标
+  commandAttack(entityId, targetId) {
+    const entity = this.entities.find(e => e.id === entityId);
+    const target = this.entities.find(e => e.id === targetId);
+
+    if (!entity || !target || entity.hp <= 0 || target.hp <= 0) return false;
+    if (entity.side === target.side) return false;
+
+    entity.attackTarget = target;
+    entity.moveTarget = null;
+    entity.aiOverride = true;
+    entity.status = 'attacking';
+
+    return true;
+  }
+
+  // 命令实体原地部署/固守
+  commandHold(entityId) {
+    const entity = this.entities.find(e => e.id === entityId);
+    if (!entity || entity.hp <= 0) return false;
+
+    entity.moveTarget = null;
+    entity.attackTarget = null;
+    entity.holdPosition = { x: entity.x, y: entity.y };
+    entity.aiOverride = true;
+    entity.status = 'deployed';
+
+    // 部署状态获得精度加成
+    entity.deployed = true;
+
+    return true;
+  }
+
+  // 获取实体详细信息（包含武器属性）
+  getEntityDetails(entityId) {
+    const entity = this.entities.find(e => e.id === entityId);
+    if (!entity) return null;
+
+    return {
+      id: entity.id,
+      name: entity.name,
+      side: entity.side,
+      type: entity.equipmentType,
+      status: entity.status,
+
+      // 位置信息
+      x: Math.round(entity.x),
+      y: Math.round(entity.y),
+      heading: Math.round(entity.heading * 10) / 10,
+
+      // 生命值
+      hp: Math.round(entity.hp),
+      maxHp: entity.maxHp,
+      hpPercent: Math.round((entity.hp / entity.maxHp) * 100),
+
+      // 移动能力
+      speed: entity.speed,
+      mobilityType: entity.mobilityType,
+
+      // 武器属性
+      weapons: {
+        range: entity.range,
+        damage: entity.damage,
+        fireRate: entity.fireRate,
+        accuracy: entity.accuracy
+      },
+
+      // 探测能力
+      detection: {
+        vision: entity.vision,
+        detection: entity.detection,
+        signature: entity.signature
+      },
+
+      // 防御属性
+      defense: {
+        armor: entity.armor,
+        evasion: entity.evasion
+      },
+
+      // 状态效果
+      effects: {
+        deployed: entity.deployed || false,
+        aiOverride: entity.aiOverride || false,
+        holdPosition: entity.holdPosition || null
+      },
+
+      // 目标信息
+      targets: {
+        currentAttack: entity.attackTarget?.id || null,
+        moveDestination: entity.moveTarget || null,
+        detectedContacts: entity.detectedContacts?.map(c => ({
+          id: c.id,
+          type: c.equipmentType,
+          distance: Math.round(Math.hypot(c.x - entity.x, c.y - entity.y)),
+          bearing: Math.round(Math.atan2(c.y - entity.y, c.x - entity.x) * 180 / Math.PI)
+        })) || []
       }
-    }
+    };
   }
 }
 

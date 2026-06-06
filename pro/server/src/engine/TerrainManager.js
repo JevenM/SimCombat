@@ -161,12 +161,15 @@ class TerrainManager {
   // 获取地形参数
   getTerrainParams(x, y) {
     const idx = this.worldToGrid(x, y);
-    if (idx < 0) return { speedMod: 1, cover: 0, pass: 1, elevation: 0 };
+    if (idx < 0) return { speedMod: 1, cover: 0, pass: 1, elevation: 0, type: 0, typeName: 'PLAIN' };
+
     const type = this.terrainType[idx];
+    const params = this.terrainParams[type] || this.terrainParams[this.TERRAIN_TYPES.PLAIN];
+
     return {
       type: type,
-      typeName: Object.keys(this.TERRAIN_TYPES).find(k => this.TERRAIN_TYPES[k] === type),
-      speedMod: this.terrainParams[type].speedMod,
+      typeName: Object.keys(this.TERRAIN_TYPES).find(k => this.TERRAIN_TYPES[k] === type) || 'PLAIN',
+      speedMod: params.speedMod,
       cover: this.cover[idx],
       pass: this.passability[idx],
       elevation: this.elevation[idx]

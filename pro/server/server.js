@@ -92,10 +92,80 @@ function handleCommand(ws, data) {
       }
       break;
 
-    case 'setEntityTarget':
-      const entity = sim.entities.find(e => e.id === data.entityId);
-      if (entity && data.target) {
-        entity.moveTarget = data.target;
+    case 'createEntity':
+      if (data.config) {
+        try {
+          const entity = sim.createEntity(data.config);
+          console.log(`Created entity: ${entity.id} (${entity.side} ${entity.equipmentType})`);
+          broadcastState();
+        } catch (err) {
+          console.error('Create entity error:', err);
+          ws.send(JSON.stringify({ type: 'error', message: err.message }));
+        }
+      }
+      break;
+
+    case 'removeEntity':
+      if (data.entityId) {
+        const removed = sim.removeEntity(data.entityId);
+        if (removed) {
+          console.log(`Removed entity: ${data.entityId}`);
+          broadcastState();
+        }
+      }
+      break;
+
+    case 'commandMove':
+      console.log('Received commandMove:', data.entityId, data.targetX, data.targetY);
+      if (data.entityId && data.targetX !== undefined && data.targetY !== undefined) {
+        const success = sim.commandMove(data.entityId, data.targetX, data.targetY);
+        ws.send(JSON.stringify({
+          type: 'commandResult',
+          cmd: 'move',
+          success,
+          entityId: data.entityId
+        }));
+        broadcastState();
+      }
+      break;
+
+    case 'commandAttack':
+      console.log('Received commandAttack:', data.entityId, data.targetId);
+      if (data.entityId && data.targetId) {
+        const success = sim.commandAttack(data.entityId, data.targetId);
+        ws.send(JSON.stringify({
+          type: 'commandResult',
+          cmd: 'attack',
+          success,
+          entityId: data.entityId,
+          targetId: data.targetId
+        }));
+        broadcastState();
+      }
+      break;
+
+    case 'commandHold':
+      console.log('Received commandHold:', data.entityId);
+      if (data.entityId) {
+        const success = sim.commandHold(data.entityId);
+        ws.send(JSON.stringify({
+          type: 'commandResult',
+          cmd: 'hold',
+          success,
+          entityId: data.entityId
+        }));
+        broadcastState();
+      }
+      break;
+
+    case 'getEntityDetails':
+      console.log('Received getEntityDetails:', data.entityId);
+      if (data.entityId) {
+        const details = sim.getEntityDetails(data.entityId);
+        ws.send(JSON.stringify({
+          type: 'entityDetails',
+          details
+        }));
       }
       break;
 
@@ -115,18 +185,6 @@ function handleCommand(ws, data) {
           sim.entityBehaviors.set(e.id, aiTemplate(e, sim.blackboard));
         }
       }
-      break;
-
-    case 'createEntity':
-      if (data.config) {
-        sim.createEntity(data.config);
-        broadcastState();
-      }
-      break;
-
-    case 'removeEntity':
-      sim.removeEntity(data.entityId);
-      broadcastState();
       break;
 
     case 'replay':
@@ -149,8 +207,30 @@ function handleCommand(ws, data) {
       broadcastState();
       break;
 
+    case 'clearAllEntities':
+      // 清空所有实体（演习模式初始化用）
+      sim.stop();
+      sim.entities = [];
+      sim.entityBehaviors.clear();
+      sim.time = 0;
+      sim.stepCount = 0;
+      sim.stats = {
+        redCasualties: 0,
+        blueCasualties: 0,
+        redDamage: 0,
+        blueDamage: 0,
+        redUnits: 0,
+        blueUnits: 0,
+        startTime: null,
+        endTime: null
+      };
+      sim.replay = [];
+      broadcastState();
+      break;
+
     default:
-      ws.send(JSON.stringify({ type: 'error', message: 'Unknown command' }));
+      console.log('Unknown command received:', data.cmd, 'Full data:', JSON.stringify(data).slice(0, 200));
+      ws.send(JSON.stringify({ type: 'error', message: 'Unknown command: ' + data.cmd }));
   }
 }
 

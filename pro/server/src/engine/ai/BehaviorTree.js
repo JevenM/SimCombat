@@ -231,16 +231,19 @@ class MoveTo extends BTNode {
       return NodeStatus.SUCCESS;
     }
 
-    // 考虑地形的移动速度
+    // 考虑地形的移动速度 (km/h 转换为 m/s)
     const terrainMod = blackboard.terrain?.getMovementSpeedModifier(
       entity.x, entity.y, entity.mobilityType
     ) || 1.0;
-    const speed = (entity.speed || 10) * terrainMod * dt;
+    const speedKmh = (entity.speed || 10);
+    const speedMs = speedKmh / 3.6; // km/h -> m/s
+    const speed = speedMs * terrainMod * dt;
 
-    entity.vx = (dx / dist) * speed / dt;
-    entity.vy = (dy / dist) * speed / dt;
+    entity.vx = (dx / dist) * speedMs * terrainMod;
+    entity.vy = (dy / dist) * speedMs * terrainMod;
     entity.x += entity.vx * dt;
     entity.y += entity.vy * dt;
+    entity.heading = Math.atan2(entity.vy, entity.vx) * 180 / Math.PI;
 
     return NodeStatus.RUNNING;
   }
@@ -281,9 +284,12 @@ class Patrol extends BTNode {
       }
     }
 
-    const speed = (entity.speed || 10) * dt;
+    const speedKmh = (entity.speed || 10);
+    const speedMs = speedKmh / 3.6;
+    const speed = speedMs * dt;
     entity.x += (dx / dist) * speed;
     entity.y += (dy / dist) * speed;
+    entity.heading = Math.atan2(dy, dx) * 180 / Math.PI;
 
     return NodeStatus.RUNNING;
   }

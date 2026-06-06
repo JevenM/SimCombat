@@ -20,18 +20,19 @@ class View3D {
   init() {
     // 场景
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x1a1a2e);
-    this.scene.fog = new THREE.Fog(0x1a1a2e, 100, 1000);
+    this.scene.background = new THREE.Color(0x0d1117);
 
-    // 相机
+    // 相机 - 俯瞰整个战场 (10000x10000米)
     const aspect = this.container.clientWidth / this.container.clientHeight;
-    this.camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 10000);
-    this.camera.position.set(500, 300, 500);
-    this.camera.lookAt(0, 0, 0);
+    this.camera = new THREE.PerspectiveCamera(45, aspect, 1, 50000);
+    // 设置相机位置：战场中心上方，斜向俯瞰
+    this.camera.position.set(5000, 12000, 8000);
+    this.camera.lookAt(5000, 0, 5000);
 
     // 渲染器
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    this.renderer.setClearColor(0x0d1117, 1);
     this.renderer.shadowMap.enabled = true;
     this.container.appendChild(this.renderer.domElement);
 
@@ -55,24 +56,38 @@ class View3D {
   }
 
   createGround() {
-    // 地面
-    const geometry = new THREE.PlaneGeometry(10000, 10000, 100, 100);
+    // 创建仿真区域地面 (10000 x 10000 米)
+    const width = 10000;
+    const depth = 10000;
+
+    // 主地面
+    const geometry = new THREE.PlaneGeometry(width, depth);
     const material = new THREE.MeshLambertMaterial({
-      color: 0x3d5a80,
-      transparent: true,
-      opacity: 0.5
+      color: 0x1a2332,
+      side: THREE.DoubleSide
     });
     const ground = new THREE.Mesh(geometry, material);
     ground.rotation.x = -Math.PI / 2;
+    ground.position.set(width/2, 0, depth/2);
     ground.receiveShadow = true;
     this.scene.add(ground);
 
-    // 网格
-    const gridHelper = new THREE.GridHelper(10000, 100, 0x0f3460, 0x1a1a2e);
+    // 网格线 - 每1000米一条
+    const gridHelper = new THREE.GridHelper(width, 10, 0x4a5568, 0x2d3748);
+    gridHelper.position.set(width/2, 0.5, depth/2);
     this.scene.add(gridHelper);
 
-    // 坐标轴
-    const axesHelper = new THREE.AxesHelper(200);
+    // 边界线
+    const edges = new THREE.EdgesGeometry(geometry);
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0xe94560, linewidth: 2 });
+    const border = new THREE.LineSegments(edges, lineMaterial);
+    border.rotation.x = -Math.PI / 2;
+    border.position.set(width/2, 1, depth/2);
+    this.scene.add(border);
+
+    // 坐标轴指示器 (在左下角)
+    const axesHelper = new THREE.AxesHelper(500);
+    axesHelper.position.set(100, 10, 100);
     this.scene.add(axesHelper);
   }
 
@@ -194,9 +209,10 @@ class View3D {
       this.entities.set(id, mesh);
     }
 
-    // 更新位置
-    mesh.position.x = entity.x - 5000; // 居中
-    mesh.position.z = entity.y - 5000;
+    // 更新位置 - 直接使用仿真坐标 (0-10000)
+    // Three.js: X轴向右，Z轴向屏幕深处（对应仿真的Y轴）
+    mesh.position.x = entity.x;
+    mesh.position.z = entity.y; // Three.js Z对应仿真的Y（深度）
 
     // 更新旋转
     if (entity.heading !== undefined) {
@@ -204,10 +220,12 @@ class View3D {
     }
 
     // 更新高度
-    if (entity.type === 'plane' || entity.type === 'air') {
-      mesh.position.y = entity.z || 50;
+    if (entity.type === 'plane' || entity.type === 'air' || entity.type === 'fighter' || entity.type === 'bomber' || entity.type === 'helicopter' || entity.type === 'uav') {
+      mesh.position.y = (entity.z || 50);
+    } else if (entity.type === 'ship' || entity.type === 'submarine' || entity.type === 'destroyer' || entity.type === 'carrier' || entity.type === 'landing_ship') {
+      mesh.position.y = 5; // 船在水面
     } else {
-      mesh.position.y = 0;
+      mesh.position.y = 3; // 地面单位稍微抬高
     }
 
     // 更新射程圈显示
@@ -239,13 +257,31 @@ class View3D {
       }
     });
 
-    // 简单的相机控制
+    // 简单的相机控制 - 修复版
     let isDragging = false;
+    let isPanning = false;
+    let isRotating = false;
     let previousMousePosition = { x: 0, y: 0 };
+
+    // 相机目标点（战场中心）
+    const target = new THREE.Vector3(5000, 0, 5000);
 
     this.renderer.domElement.addEventListener('mousedown', (e) => {
       isDragging = true;
       previousMousePosition = { x: e.clientX, y: e.clientY };
+
+      // 左键旋转，右键平移
+      if (e.button === 0) {
+        isRotating = true;
+        isPanning = false;
+      } else if (e.button === 2) {
+        isPanning = true;
+        isRotating = false;
+      }
+    });
+
+    this.renderer.domElement.addEventListener('contextmenu', (e) => {
+      e.preventDefault(); // 禁用右键菜单
     });
 
     this.renderer.domElement.addEventListener('mousemove', (e) => {
@@ -256,30 +292,53 @@ class View3D {
         y: e.clientY - previousMousePosition.y
       };
 
-      // 旋转相机
-      const angle = deltaMove.x * 0.01;
-      const radius = Math.sqrt(
-        this.camera.position.x ** 2 +
-        this.camera.position.z ** 2
-      );
-      const currentAngle = Math.atan2(this.camera.position.z, this.camera.position.x);
-      const newAngle = currentAngle + angle;
+      if (isRotating) {
+        // 围绕目标点旋转
+        const offset = new THREE.Vector3().subVectors(this.camera.position, target);
+        const spherical = new THREE.Spherical().setFromVector3(offset);
 
-      this.camera.position.x = radius * Math.cos(newAngle);
-      this.camera.position.z = radius * Math.sin(newAngle);
-      this.camera.lookAt(0, 0, 0);
+        // 水平旋转
+        spherical.theta -= deltaMove.x * 0.005;
+        // 垂直旋转（限制俯仰角）
+        spherical.phi += deltaMove.y * 0.005;
+        spherical.phi = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, spherical.phi));
+
+        offset.setFromSpherical(spherical);
+        this.camera.position.copy(target).add(offset);
+        this.camera.lookAt(target);
+      } else if (isPanning) {
+        // 平移相机和目标点
+        const moveSpeed = 5;
+        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(this.camera.quaternion);
+        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(this.camera.quaternion);
+
+        const moveX = right.multiplyScalar(-deltaMove.x * moveSpeed);
+        const moveY = up.multiplyScalar(deltaMove.y * moveSpeed);
+
+        this.camera.position.add(moveX).add(moveY);
+        target.add(moveX).add(moveY);
+      }
 
       previousMousePosition = { x: e.clientX, y: e.clientY };
     });
 
     this.renderer.domElement.addEventListener('mouseup', () => {
       isDragging = false;
+      isRotating = false;
+      isPanning = false;
     });
 
     // 滚轮缩放
     this.renderer.domElement.addEventListener('wheel', (e) => {
+      e.preventDefault();
       const scale = e.deltaY > 0 ? 1.1 : 0.9;
-      this.camera.position.multiplyScalar(scale);
+      const offset = new THREE.Vector3().subVectors(this.camera.position, target);
+      offset.multiplyScalar(scale);
+      // 限制最小和最大距离
+      const dist = offset.length();
+      if (dist > 100 && dist < 30000) {
+        this.camera.position.copy(target).add(offset);
+      }
     });
   }
 
@@ -297,6 +356,28 @@ class View3D {
 
   setVisible(visible) {
     this.container.style.display = visible ? 'block' : 'none';
+  }
+
+  // 聚焦到指定位置
+  focusOnPosition(x, y) {
+    // 计算新的相机位置 - 保持相机高度和角度，只改变目标点
+    const targetX = x;
+    const targetZ = y; // Three.js Z对应仿真的Y
+
+    // 创建新的目标点
+    const newTarget = new THREE.Vector3(targetX, 0, targetZ);
+
+    // 计算当前相机相对目标的偏移
+    const offset = new THREE.Vector3().subVectors(this.camera.position, newTarget);
+
+    // 如果偏移太小（相机离目标太近），设置一个默认距离
+    if (offset.length() < 1000) {
+      offset.set(5000, 8000, 5000);
+    }
+
+    // 设置新的相机位置
+    this.camera.position.copy(newTarget).add(offset);
+    this.camera.lookAt(newTarget);
   }
 
   destroy() {

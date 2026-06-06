@@ -8,12 +8,12 @@ class StatsPanel {
     this.engagementCount = 0;
   }
 
-  update(stats, combatEvents = []) {
+  update(stats, combatEvents = [], isRunning = false, time = 0) {
     this.updateCasualtyStats(stats);
     this.updateDamageStats(stats);
     this.updateValueStats(stats);
-    this.updateBattleStatus(stats, combatEvents);
-    this.checkConclusion(stats);
+    this.updateBattleStatus(stats, combatEvents, isRunning);
+    this.checkConclusion(stats, isRunning, time);
   }
 
   updateCasualtyStats(stats) {
@@ -130,40 +130,63 @@ class StatsPanel {
     }
   }
 
-  checkConclusion(stats) {
+  checkConclusion(stats, isRunning = false, time = 0) {
     const conclusionEl = document.getElementById('conclusion');
 
-    if (!stats.endTime) {
-      conclusionEl.innerHTML = '<p class="pending">推演进行中...</p>';
+    // 推演还未开始
+    if (time === 0 && !isRunning && !stats.endTime) {
+      conclusionEl.innerHTML = '<p class="pending">推演准备就绪 - 点击"开始推演"启动</p>';
       return;
     }
 
-    const redUnits = stats.redUnits || 0;
-    const blueUnits = stats.blueUnits || 0;
+    // 推演正在进行中
+    if (!stats.endTime) {
+      conclusionEl.innerHTML = `<p class="pending">推演进行中... (时间: ${time}s)</p>`;
+      return;
+    }
+
+    // 推演已结束 - 显示结果
+    const winner = stats.winner;
+    const reason = stats.endReason;
 
     let result = '';
     let className = '';
 
-    if (redUnits === 0 && blueUnits === 0) {
-      result = '推演结果：两败俱伤，平局';
+    if (winner === 'draw') {
+      result = `推演结束：平局 - ${reason}`;
       className = 'draw';
-    } else if (redUnits === 0) {
-      result = '推演结果：蓝军胜利';
-      className = 'blue-win';
-    } else if (blueUnits === 0) {
-      result = '推演结果：红军胜利';
+    } else if (winner === 'red') {
+      result = `推演结束：红军胜利！${reason}`;
       className = 'red-win';
+    } else if (winner === 'blue') {
+      result = `推演结束：蓝军胜利！${reason}`;
+      className = 'blue-win';
     } else {
-      const redRatio = stats.redValue / (stats.blueValue + 1);
-      if (redRatio > 1.5) {
-        result = '推演结果：红军决定性胜利';
-        className = 'red-win';
-      } else if (redRatio < 0.67) {
-        result = '推演结果：蓝军决定性胜利';
-        className = 'blue-win';
-      } else {
-        result = '推演结果：战术僵持';
+      // 向后兼容
+      const redUnits = stats.redUnits || 0;
+      const blueUnits = stats.blueUnits || 0;
+
+      if (redUnits === 0 && blueUnits === 0) {
+        result = '推演结果：两败俱伤，平局';
         className = 'draw';
+      } else if (redUnits === 0) {
+        result = '推演结果：蓝军胜利';
+        className = 'blue-win';
+      } else if (blueUnits === 0) {
+        result = '推演结果：红军胜利';
+        className = 'red-win';
+      } else {
+        const redRatio = stats.redValue / (stats.blueValue + 1);
+        if (redRatio > 1.5) {
+          result = '推演结果：红军决定性胜利';
+          className = 'red-win';
+        } else if (redRatio < 0.67) {
+          result = '推演结果：蓝军决定性胜利';
+          className = 'blue-win';
+        } else {
+          result = '推演结果：战术僵持';
+          className = 'draw';
+        }
       }
     }
 
