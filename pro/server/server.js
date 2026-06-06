@@ -115,6 +115,22 @@ function handleCommand(ws, data) {
       }
       break;
 
+    case 'moveEntity':
+      if (data.entityId && data.x !== undefined && data.y !== undefined) {
+        const entity = sim.entities.find(e => e.id === data.entityId);
+        if (entity) {
+          entity.x = data.x;
+          entity.y = data.y;
+          // 重新同步高度
+          if (entity.type !== 'air' && entity.type !== 'naval') {
+            entity.z = sim.terrain.getElevation(entity.x, entity.y);
+          }
+          console.log(`Moved entity: ${data.entityId} to (${data.x}, ${data.y})`);
+          broadcastState();
+        }
+      }
+      break;
+
     case 'commandMove':
       console.log('Received commandMove:', data.entityId, data.targetX, data.targetY);
       if (data.entityId && data.targetX !== undefined && data.targetY !== undefined) {
@@ -170,9 +186,17 @@ function handleCommand(ws, data) {
       break;
 
     case 'setEntityPath':
-      const ent = sim.entities.find(e => e.id === data.entityId);
-      if (ent && data.path) {
-        sim.movement.setPath(ent, data.path);
+      if (data.entityId && data.path) {
+        const ent = sim.entities.find(e => e.id === data.entityId);
+        if (ent) {
+          // 设置单位路径 - 使用 MovementSystem 的统一接口
+          sim.movement.setPath(ent, data.path);
+          // 同时设置状态为移动
+          ent.status = 'moving';
+          ent.pathIndex = 0;
+          console.log(`Set path for ${data.entityId}: ${data.path.length} waypoints`);
+          broadcastState();
+        }
       }
       break;
 
@@ -275,6 +299,12 @@ app.post('/api/save', (req, res) => {
   res.json({ success: true, snapshot });
 });
 
+// 获取回放数据
+app.get('/api/replay', (req, res) => {
+  const replay = sim.getReplay();
+  res.json({ replay });
+});
+
 // 加载推演状态
 app.post('/api/load', (req, res) => {
   if (req.body.snapshot) {
@@ -330,5 +360,4 @@ const startServer = (port) => {
 
 startServer(PORT);
 
-// 加载默认想定
-sim.loadScenario(sim.sampleScenario());
+// 初始状态为空，等待用户配置

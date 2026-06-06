@@ -66,6 +66,26 @@ class MovementSystem {
 
       // 路径跟随（如果有预计算路径）
       if (entity.path && entity.path.length > 0) {
+        const nextWaypoint = entity.path[entity.pathIndex || 0];
+        if (nextWaypoint) {
+          const wpdist = Math.hypot(nextWaypoint.x - entity.x, nextWaypoint.y - entity.y);
+          if (wpdist < 20) {
+            // 到达路径点，转向下一个
+            entity.pathIndex = (entity.pathIndex || 0) + 1;
+            if (entity.pathIndex >= entity.path.length) {
+              // 路径完成
+              entity.path = null;
+              entity.pathIndex = 0;
+              entity.moveTarget = null;
+              entity.status = 'idle';
+            } else {
+              entity.moveTarget = entity.path[entity.pathIndex];
+            }
+          } else {
+            entity.moveTarget = nextWaypoint;
+          }
+        }
+      } else if (entity.path && entity.path.length > 0) {
         const nextWaypoint = entity.path[0];
         const wpdist = Math.hypot(nextWaypoint.x - entity.x, nextWaypoint.y - entity.y);
         if (wpdist < 10) {

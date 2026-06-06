@@ -191,10 +191,46 @@ class StatsPanel {
     }
 
     conclusionEl.innerHTML = `<p class="result ${className}">${result}</p>`;
+
+    // 显示结束弹窗
+    this.showEndGameModal(result, className);
+  }
+
+  showEndGameModal(result, className) {
+    // 检查是否已经显示过弹窗
+    if (this.endGameModalShown) return;
+    this.endGameModalShown = true;
+
+    const modal = document.createElement('div');
+    modal.className = 'endgame-modal';
+    modal.innerHTML = `
+      <div class="endgame-overlay"></div>
+      <div class="endgame-content">
+        <h2>🎯 推演结束</h2>
+        <div class="endgame-result ${className}">${result}</div>
+        <div class="endgame-actions">
+          <button id="btnSaveReplay" class="btn btn-primary">💾 保存回放</button>
+          <button id="btnCloseModal" class="btn btn-secondary">关闭</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // 绑定按钮事件
+    modal.querySelector('#btnSaveReplay').addEventListener('click', () => {
+      window.app.saveReplay();
+      modal.remove();
+    });
+
+    modal.querySelector('#btnCloseModal').addEventListener('click', () => {
+      modal.remove();
+    });
   }
 
   reset() {
     this.damageHistory = { red: [], blue: [] };
     this.engagementCount = 0;
+    this.endGameModalShown = false;
   }
 }

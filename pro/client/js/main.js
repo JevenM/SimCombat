@@ -29,6 +29,11 @@ class SimCombatApp {
     this.view3d.setVisible(false); // 默认隐藏3D视图
     this.statsPanel = new StatsPanel();
 
+    // 演习模式默认不显示演习区域
+    this.simMode = 'exercise';
+    this.exerciseAreaSet = false;
+    this.map2d.clearExerciseArea();
+
     // 初始化攻击动画管理器
     this.attackAnimations = null; // 等待地图初始化完成后再创建
 
@@ -196,9 +201,43 @@ class SimCombatApp {
       this.startAreaSelection();
     });
 
+    document.getElementById('btnMoveArea')?.addEventListener('click', () => {
+      this.startAreaMove();
+    });
+
+    document.getElementById('btnDeleteArea')?.addEventListener('click', () => {
+      this.deleteExerciseArea();
+    });
+
     document.getElementById('btnResetArea')?.addEventListener('click', () => {
       this.resetExerciseArea();
     });
+
+    // 侧边栏切换按钮
+    const leftToggle = document.getElementById('toggleLeftPanel');
+    const rightToggle = document.getElementById('toggleRightPanel');
+    const leftPanel = document.getElementById('leftPanel');
+    const rightPanel = document.getElementById('rightPanel');
+
+    if (leftToggle && leftPanel) {
+      leftToggle.addEventListener('click', () => {
+        leftPanel.classList.toggle('collapsed');
+        leftToggle.classList.toggle('collapsed');
+        leftToggle.textContent = leftPanel.classList.contains('collapsed') ? '▶' : '◀';
+        // 触发地图resize
+        setTimeout(() => this.map2d.map.invalidateSize(), 300);
+      });
+    }
+
+    if (rightToggle && rightPanel) {
+      rightToggle.addEventListener('click', () => {
+        rightPanel.classList.toggle('collapsed');
+        rightToggle.classList.toggle('collapsed');
+        rightToggle.textContent = rightPanel.classList.contains('collapsed') ? '◀' : '▶';
+        // 触发地图resize
+        setTimeout(() => this.map2d.map.invalidateSize(), 300);
+      });
+    }
 
     // 视图切换
     document.getElementById('viewMode').addEventListener('change', (e) => {
@@ -246,12 +285,24 @@ class SimCombatApp {
       this.handleFileUpload(e.target.files[0]);
     });
 
+    // 地图双击事件 - 结束路径绘制
+    this.map2d.map.on('dblclick', () => {
+      if (this.editorMode === 'setPath' && this.pathDrawing) {
+        this.finishPathDrawing();
+      }
+    });
+
     // 设置变更
     document.getElementById('showLabels').addEventListener('change', () => {
       if (this.state) this.updateState(this.state);
     });
     document.getElementById('showRange').addEventListener('change', () => {
       if (this.state) this.updateState(this.state);
+    });
+
+    // 底图切换
+    document.getElementById('baseMapType')?.addEventListener('change', (e) => {
+      this.map2d.switchBaseLayer(e.target.value);
     });
 
     // 回放控制
@@ -530,6 +581,28 @@ class SimCombatApp {
     }
   }
 
+  // 保存回放
+  async saveReplay() {
+    try {
+      const res = await fetch('/api/replay');
+      const data = await res.json();
+
+      if (data.replay && data.replay.length > 0) {
+        const blob = new Blob([JSON.stringify(data.replay, null, 2)]);
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `simcombat_replay_${Date.now()}.json`;
+        a.click();
+        this.addLog('回放已保存', 'success');
+      } else {
+        this.addLog('没有可保存的回放数据', 'warning');
+      }
+    } catch (e) {
+      this.addLog('保存回放失败', 'error');
+    }
+  }
+
   handleFileUpload(file) {
     if (!file) return;
     const reader = new FileReader();
@@ -549,9 +622,50 @@ class SimCombatApp {
     const panel = document.getElementById('logPanel');
     const entry = document.createElement('div');
     entry.className = `log-entry ${type}`;
-    entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    const timestamp = new Date().toLocaleTimeString();
+    entry.textContent = `[${timestamp}] ${msg}`;
     panel.insertBefore(entry, panel.firstChild);
     while (panel.children.length > 100) panel.removeChild(panel.lastChild);
+
+    // 同时保存到本地存储
+    this.saveLogToStorage(`[${timestamp}] [${type}] ${msg}`);
+  }
+
+  // 保存日志到本地存储
+  saveLogToStorage(logEntry) {
+    try {
+      let logs = JSON.parse(localStorage.getItem('simcombat_logs') || '[]');
+      logs.push({
+        time: Date.now(),
+        entry: logEntry
+      });
+      // 只保留最近1000条
+      if (logs.length > 1000) logs = logs.slice(-1000);
+      localStorage.setItem('simcombat_logs', JSON.stringify(logs));
+    } catch (e) {
+      console.error('Failed to save log:', e);
+    }
+  }
+
+  // 导出日志到文件
+  exportLogs() {
+    try {
+      const logs = JSON.parse(localStorage.getItem('simcombat_logs') || '[]');
+      if (logs.length === 0) {
+        this.addLog('没有可导出的日志', 'warning');
+        return;
+      }
+      const content = logs.map(l => `[${new Date(l.time).toLocaleString()}] ${l.entry}`).join('\n');
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `simcombat_logs_${Date.now()}.txt`;
+      a.click();
+      this.addLog('日志已导出', 'success');
+    } catch (e) {
+      this.addLog('导出日志失败', 'error');
+    }
   }
 
   addCombatLog(event) {
@@ -597,15 +711,17 @@ class SimCombatApp {
         if (this.simMode === 'exercise') {
           modeHint.innerHTML = '💡 演习模式：请先划定演习区域，配置兵力后再开始推演';
           modeHint.style.borderLeftColor = '#f0883e';
-          // 演习模式下清空默认单位
+          // 演习模式下清空默认单位并隐藏演习区域
           this.send({ cmd: 'clearAllEntities' });
           this.exerciseAreaSet = false;
+          this.map2d.clearExerciseArea();
         } else {
           modeHint.innerHTML = '💡 实战模式：可直接部署兵力，系统已加载预设对抗态势';
           modeHint.style.borderLeftColor = '#238636';
-          // 实战模式下加载默认想定
+          // 实战模式下加载默认想定并显示默认演习区域
           this.send({ cmd: 'reset' });
           this.exerciseAreaSet = true;
+          this.map2d.setExerciseArea([[39.4, 115.9], [40.4, 116.9]]);
         }
       });
     }
@@ -616,6 +732,11 @@ class SimCombatApp {
       const isAddMode = this.editorMode === 'addRed' || this.editorMode === 'addBlue';
       unitSelector.style.display = isAddMode ? 'block' : 'none';
 
+      // 清除之前的路径绘制状态
+      if (this.pathDrawing) {
+        this.cancelPathDrawing();
+      }
+
       if (this.editorMode === 'view') {
         hint.textContent = '💡 仅查看模式，可以查看和选择单位';
         this.map2d.map.getContainer().style.cursor = '';
@@ -625,6 +746,12 @@ class SimCombatApp {
       } else if (this.editorMode === 'remove') {
         hint.textContent = '💡 点击单位删除';
         this.map2d.map.getContainer().style.cursor = 'not-allowed';
+      } else if (this.editorMode === 'move') {
+        hint.textContent = '💡 点击选择要移动的单位，然后点击新位置放置';
+        this.map2d.map.getContainer().style.cursor = 'move';
+      } else if (this.editorMode === 'setPath') {
+        hint.textContent = '💡 点击单位开始设置路径，然后在地图上点击添加路径点，双击结束';
+        this.map2d.map.getContainer().style.cursor = 'crosshair';
       }
     });
 
@@ -633,13 +760,25 @@ class SimCombatApp {
       this.selectedUnitType = e.target.value;
     });
 
-    // 地图点击事件 - 添加/删除单位
+    // 地图点击事件 - 添加/删除单位/设置路径
     this.map2d.onMapClick = (e) => {
       if (this.editorMode === 'view') return;
 
       if (this.editorMode === 'remove') {
         // 删除模式：查找最近的单位并删除
         this.removeNearestEntity(e.latlng);
+        return;
+      }
+
+      if (this.editorMode === 'move') {
+        // 移动模式
+        this.handleMoveEntity(e);
+        return;
+      }
+
+      if (this.editorMode === 'setPath') {
+        // 设置路径模式
+        this.handlePathDrawing(e);
         return;
       }
 
@@ -659,6 +798,10 @@ class SimCombatApp {
 
     document.getElementById('btnSaveScenario').addEventListener('click', () => {
       this.saveScenario();
+    });
+
+    document.getElementById('btnExportLogs')?.addEventListener('click', () => {
+      this.exportLogs();
     });
 
     // 预设想定加载
@@ -1014,10 +1157,237 @@ class SimCombatApp {
     }
   }
 
+  // ========== 移动单位功能 ==========
+  handleMoveEntity(e) {
+    if (!this.movingEntity) {
+      // 第一次点击，选择要移动的单位
+      const clickedEntity = this.getEntityAt(e.latlng);
+      if (clickedEntity) {
+        this.movingEntity = clickedEntity;
+        this.addLog(`已选择 ${clickedEntity.id}，请点击新位置放置`, 'info');
+        // 高亮选中的单位
+        this.map2d.highlightEntity(clickedEntity.id);
+      } else {
+        this.addLog('请先点击选择一个单位', 'warning');
+      }
+      return;
+    }
+
+    // 第二次点击，放置单位到新位置
+    const simPos = this.map2d.geoToSim(e.latlng.lat, e.latlng.lng);
+
+    // 发送移动命令到服务器
+    this.send({
+      cmd: 'moveEntity',
+      entityId: this.movingEntity.id,
+      x: simPos.x,
+      y: simPos.y
+    });
+
+    this.addLog(`${this.movingEntity.id} 已移动到 (${Math.round(simPos.x)}, ${Math.round(simPos.y)})`, 'success');
+
+    // 重置移动状态
+    this.movingEntity = null;
+  }
+
+  // ========== 路径绘制功能 ==========
+  startPathDrawing(entityId) {
+    this.pathDrawing = {
+      entityId: entityId,
+      points: [],
+      tempLine: null
+    };
+    this.addLog(`正在为 ${entityId} 设置路径，请点击地图添加路径点，双击结束`, 'info');
+  }
+
+  handlePathDrawing(e) {
+    if (!this.pathDrawing) {
+      // 第一次点击，选择单位
+      const clickedEntity = this.getEntityAt(e.latlng);
+      if (clickedEntity) {
+        this.startPathDrawing(clickedEntity.id);
+      } else {
+        this.addLog('请先点击选择一个单位', 'warning');
+      }
+      return;
+    }
+
+    // 添加路径点
+    const simPos = this.map2d.geoToSim(e.latlng.lat, e.latlng.lng);
+    this.pathDrawing.points.push({ x: simPos.x, y: simPos.y });
+
+    // 更新临时路径显示
+    this.updateTempPath();
+
+    this.addLog(`路径点 ${this.pathDrawing.points.length} 已添加: (${Math.round(simPos.x)}, ${Math.round(simPos.y)})`, 'info');
+  }
+
+  updateTempPath() {
+    if (this.pathDrawing.tempLine) {
+      this.map2d.map.removeLayer(this.pathDrawing.tempLine);
+    }
+
+    if (this.pathDrawing.points.length < 2) return;
+
+    const latlngs = this.pathDrawing.points.map(p => {
+      const geo = this.map2d.simToGeo(p.x, p.y);
+      return [geo.lat, geo.lng];
+    });
+
+    this.pathDrawing.tempLine = L.polyline(latlngs, {
+      color: '#ffd700',
+      weight: 3,
+      opacity: 0.6,
+      dashArray: '5, 5'
+    }).addTo(this.map2d.map);
+  }
+
+  finishPathDrawing() {
+    if (!this.pathDrawing || this.pathDrawing.points.length < 2) {
+      this.addLog('路径点不足，取消路径设置', 'warning');
+      this.cancelPathDrawing();
+      return;
+    }
+
+    // 发送路径到服务器
+    this.send({
+      cmd: 'setEntityPath',
+      entityId: this.pathDrawing.entityId,
+      path: this.pathDrawing.points
+    });
+
+    // 显示路径
+    this.map2d.showPath(this.pathDrawing.entityId, this.pathDrawing.points);
+
+    this.addLog(`路径设置完成，${this.pathDrawing.points.length} 个路径点`, 'success');
+    this.cancelPathDrawing();
+  }
+
+  cancelPathDrawing() {
+    if (this.pathDrawing) {
+      if (this.pathDrawing.tempLine) {
+        this.map2d.map.removeLayer(this.pathDrawing.tempLine);
+      }
+      this.pathDrawing = null;
+    }
+  }
+
+  getEntityAt(latlng) {
+    const simPos = this.map2d.geoToSim(latlng.lat, latlng.lng);
+    let nearest = null;
+    let minDist = Infinity;
+
+    for (const entity of this.state?.entities || []) {
+      const dist = Math.hypot(entity.x - simPos.x, entity.y - simPos.y);
+      if (dist < minDist && dist < 200) { // 200米范围内
+        minDist = dist;
+        nearest = entity;
+      }
+    }
+
+    return nearest;
+  }
+
   resetExerciseArea() {
     // 重置为默认演习区域（北京周边）
     this.map2d.setExerciseArea([[39.4, 115.9], [40.4, 116.9]]);
+    this.exerciseAreaSet = true;
     this.addLog('演习区域已重置为默认值', 'info');
+  }
+
+  // 删除演习区域
+  deleteExerciseArea() {
+    this.map2d.clearExerciseArea();
+    this.exerciseAreaSet = false;
+    this.addLog('演习区域已删除', 'info');
+  }
+
+  // 移动演习区域
+  startAreaMove() {
+    if (!this.map2d.exerciseArea) {
+      this.addLog('⚠️ 没有可移动的演习区域，请先划定区域', 'warning');
+      return;
+    }
+
+    const btn = document.getElementById('btnMoveArea');
+    if (btn.classList.contains('active')) {
+      this.cancelAreaMove();
+      return;
+    }
+
+    btn.classList.add('active');
+    btn.textContent = '✋ 取消移动';
+    this.addLog('请按住鼠标右键拖拽移动演习区域', 'info');
+
+    // 禁用地图拖拽
+    this.map2d.map.dragging.disable();
+
+    let isDragging = false;
+    let startLat = 0;
+    let startLng = 0;
+    let initialBounds = null;
+
+    const onMouseDown = (e) => {
+      if (e.originalEvent.button !== 2) return; // 只处理右键
+
+      // 检查点击是否在演习区域内
+      const latlng = e.latlng;
+      const bounds = this.map2d.exerciseArea.getBounds();
+      if (!bounds.contains(latlng)) return;
+
+      isDragging = true;
+      startLat = latlng.lat;
+      startLng = latlng.lng;
+      initialBounds = bounds;
+    };
+
+    const onMouseMove = (e) => {
+      if (!isDragging || !initialBounds) return;
+
+      const deltaLat = e.latlng.lat - startLat;
+      const deltaLng = e.latlng.lng - startLng;
+
+      const newBounds = [
+        [initialBounds.getSouth() + deltaLat, initialBounds.getWest() + deltaLng],
+        [initialBounds.getNorth() + deltaLat, initialBounds.getEast() + deltaLng]
+      ];
+
+      this.map2d.setExerciseArea(newBounds);
+    };
+
+    const onMouseUp = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      initialBounds = this.map2d.exerciseArea.getBounds();
+      this.addLog('演习区域已移动', 'success');
+    };
+
+    this.map2d.map.on('mousedown', onMouseDown);
+    this.map2d.map.on('mousemove', onMouseMove);
+    this.map2d.map.on('mouseup', onMouseUp);
+
+    this._areaMoveHandlers = { onMouseDown, onMouseMove, onMouseUp };
+  }
+
+  cancelAreaMove() {
+    const btn = document.getElementById('btnMoveArea');
+    if (btn) {
+      btn.classList.remove('active');
+      btn.textContent = '✋ 移动区域';
+    }
+
+    // 恢复地图拖拽
+    if (this.map2d.map.dragging) {
+      this.map2d.map.dragging.enable();
+    }
+
+    // 移除事件监听
+    if (this._areaMoveHandlers) {
+      this.map2d.map.off('mousedown', this._areaMoveHandlers.onMouseDown);
+      this.map2d.map.off('mousemove', this._areaMoveHandlers.onMouseMove);
+      this.map2d.map.off('mouseup', this._areaMoveHandlers.onMouseUp);
+      this._areaMoveHandlers = null;
+    }
   }
 }
 

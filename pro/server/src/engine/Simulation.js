@@ -319,56 +319,27 @@ class Simulation {
     for (const entity of this.entities) {
       if (entity.hp <= 0) continue;
 
-      // 部署状态自动攻击范围内目标
-      if (entity.status === 'deployed' || entity.status === 'attacking' || entity.aiType === 'defensive') {
-        const target = this.findBestTarget(entity);
-        if (target) {
-          const result = this.combat.resolveDirectFire(entity, target, this.dt);
-          if (result) {
-            this.updateDamageStats(entity.side, result.damage);
-            this.blackboard.combatEvents.push({
-              step: this.stepCount,
-              time: this.time,
-              attacker: entity.id,
-              attackerName: entity.name,
-              attackerSide: entity.side,
-              target: target.id,
-              targetName: target.name,
-              damage: Math.round(result.damage),
-              hit: result.hit,
-              distance: Math.round(result.distance)
-            });
+      // 所有存活单位自动攻击射程内的敌方目标
+      const target = this.findBestTarget(entity);
+      if (target) {
+        const result = this.combat.resolveDirectFire(entity, target, this.dt);
+        if (result) {
+          this.updateDamageStats(entity.side, result.damage);
+          this.blackboard.combatEvents.push({
+            step: this.stepCount,
+            time: this.time,
+            attacker: entity.id,
+            attackerName: entity.name,
+            attackerSide: entity.side,
+            target: target.id,
+            targetName: target.name,
+            damage: Math.round(result.damage),
+            hit: result.hit,
+            distance: Math.round(result.distance)
+          });
 
-            if (target.hp <= 0) {
-              this.recordKill(entity, target);
-            }
-          }
-        }
-      }
-
-      // 移动接近目标时自动开火
-      if (entity.status === 'moving' && entity.moveTarget) {
-        const target = this.findBestTarget(entity);
-        if (target && Math.hypot(target.x - entity.x, target.y - entity.y) <= entity.range * 0.8) {
-          const result = this.combat.resolveDirectFire(entity, target, this.dt);
-          if (result) {
-            this.updateDamageStats(entity.side, result.damage);
-            this.blackboard.combatEvents.push({
-              step: this.stepCount,
-              time: this.time,
-              attacker: entity.id,
-              attackerName: entity.name,
-              attackerSide: entity.side,
-              target: target.id,
-              targetName: target.name,
-              damage: Math.round(result.damage),
-              hit: result.hit,
-              distance: Math.round(result.distance)
-            });
-
-            if (target.hp <= 0) {
-              this.recordKill(entity, target);
-            }
+          if (target.hp <= 0) {
+            this.recordKill(entity, target);
           }
         }
       }

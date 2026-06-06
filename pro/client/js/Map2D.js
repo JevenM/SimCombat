@@ -10,6 +10,7 @@ class Map2D {
     this.visionCircles = new Map();  // 视野/雷达范围
     this.radarCircles = new Map();   // 雷达探测范围
     this.attackLines = new Map();    // 攻击线动画
+    this.pathLayers = new Map();     // 单位路径
     this.terrainOverlay = null;
     this.selectedId = null;
 
@@ -28,12 +29,32 @@ class Map2D {
       zoomControl: false
     });
 
-    // 添加底图
-    this.baseLayer = L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+    // 添加底图图层组
+    this.baseLayers = {};
+
+    // 标准地图 (高德)
+    this.baseLayers.standard = L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
       subdomains: '1234',
       attribution: '高德地图',
       maxZoom: 18
-    }).addTo(this.map);
+    });
+
+    // 卫星影像 (高德)
+    this.baseLayers.satellite = L.tileLayer('https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}', {
+      subdomains: '1234',
+      attribution: '高德地图 - 卫星',
+      maxZoom: 18
+    });
+
+    // 地形图 (OpenTopoMap)
+    this.baseLayers.terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+      attribution: 'OpenTopoMap',
+      maxZoom: 17
+    });
+
+    // 默认使用标准地图
+    this.baseLayer = this.baseLayers.standard;
+    this.baseLayer.addTo(this.map);
 
     // 演习区域管理
     this.exerciseArea = null; // 当前演习区域
@@ -56,6 +77,7 @@ class Map2D {
 
     // 演习区域和网格默认不显示，等待用户设置
     this.exerciseArea = null;
+    this.exerciseAreaLabel = null;  // 保存标签引用
     this.exerciseBounds = null;
     this.coordTransform = null;
     this.gridLayer = null;
@@ -67,19 +89,14 @@ class Map2D {
       this.map.removeLayer(this.exerciseArea);
       this.exerciseArea = null;
     }
+    if (this.exerciseAreaLabel) {
+      this.map.removeLayer(this.exerciseAreaLabel);
+      this.exerciseAreaLabel = null;
+    }
     if (this.gridLayer) {
       this.map.removeLayer(this.gridLayer);
       this.gridLayer = null;
     }
-    // 移除演习区域标签
-    this.map.eachLayer((layer) => {
-      if (layer instanceof L.Marker && layer.getElement()) {
-        const html = layer.getElement().innerHTML;
-        if (html && html.includes('演习区域')) {
-          this.map.removeLayer(layer);
-        }
-      }
-    });
     this.exerciseBounds = null;
     this.coordTransform = null;
   }
@@ -89,6 +106,12 @@ class Map2D {
     // 清除旧的演习区域
     if (this.exerciseArea) {
       this.map.removeLayer(this.exerciseArea);
+    }
+    if (this.exerciseAreaLabel) {
+      this.map.removeLayer(this.exerciseAreaLabel);
+    }
+    if (this.gridLayer) {
+      this.map.removeLayer(this.gridLayer);
     }
 
     this.exerciseBounds = bounds;
@@ -102,13 +125,13 @@ class Map2D {
       dashArray: '10, 5'
     }).addTo(this.map);
 
-    // 添加标签
+    // 添加标签（保存引用以便后续移除）
     const center = [
       (bounds[0][0] + bounds[1][0]) / 2,
       (bounds[0][1] + bounds[1][1]) / 2
     ];
 
-    L.marker(center, {
+    this.exerciseAreaLabel = L.marker(center, {
       icon: L.divIcon({
         className: 'exercise-area-label',
         html: '<div style="background:rgba(233,69,96,0.8);color:#fff;padding:4px 8px;border-radius:4px;font-size:12px;font-weight:bold;">演习区域</div>',
@@ -198,21 +221,75 @@ class Map2D {
   createIcons() {
     const createIcon = (type, side) => {
       const colors = {
-        red: '#dc3545',
-        blue: '#007bff'
+        red: '#e74c3c',
+        blue: '#3498db'
       };
       const c = colors[side] || '#666';
 
-      // 使用彩色div图标替代SVG
+      // NATO军事符号 - 更专业的军事图标
       const shapes = {
-        tank: `<div style="background:${c};width:20px;height:14px;border-radius:4px;border:2px solid white;position:relative;"><div style="position:absolute;top:-4px;left:6px;width:8px;height:6px;background:${c};border:1px solid white;border-radius:2px;"></div><div style="position:absolute;top:4px;right:-6px;width:6px;height:2px;background:white;"></div></div>`,
-        infantry: `<div style="width:24px;height:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;"><div style="width:8px;height:8px;background:${c};border:2px solid white;border-radius:50%;"></div><div style="width:2px;height:10px;background:${c};"></div><div style="width:16px;height:2px;background:${c};"></div></div>`,
-        fighter: `<div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:20px solid ${c};filter:drop-shadow(0 0 2px white);"></div>`,
-        bomber: `<div style="width:24px;height:10px;background:${c};border:2px solid white;border-radius:50%;"></div>`,
-        helicopter: `<div style="width:24px;height:12px;background:${c};border:2px solid white;border-radius:40%;position:relative;"><div style="position:absolute;top:-4px;left:2px;width:20px;height:2px;background:white;"></div><div style="position:absolute;top:-8px;left:10px;width:2px;height:6px;background:white;"></div></div>`,
-        ship: `<div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:16px solid ${c};filter:drop-shadow(0 0 1px white);"></div>`,
-        apc: `<div style="width:20px;height:12px;background:${c};border:2px solid white;border-radius:6px;"></div>`,
-        default: `<div style="width:16px;height:16px;background:${c};border:2px solid white;border-radius:50%;"></div>`
+        tank: `
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <rect x="6" y="14" width="20" height="10" rx="2" fill="${c}" stroke="white" stroke-width="2"/>
+            <rect x="10" y="10" width="12" height="6" rx="1" fill="${c}" stroke="white" stroke-width="1.5"/>
+            <line x1="22" y1="13" x2="28" y2="13" stroke="white" stroke-width="2"/>
+            <circle cx="9" cy="19" r="2.5" fill="#333"/>
+            <circle cx="23" cy="19" r="2.5" fill="#333"/>
+          </svg>`,
+        infantry: `
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <circle cx="16" cy="8" r="5" fill="${c}" stroke="white" stroke-width="2"/>
+            <line x1="16" y1="13" x2="16" y2="22" stroke="${c}" stroke-width="3" stroke-linecap="round"/>
+            <line x1="8" y1="16" x2="24" y2="16" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="16" y1="22" x2="10" y2="28" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="16" y1="22" x2="22" y2="28" stroke="${c}" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>`,
+        fighter: `
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <path d="M16 4 L20 14 L28 16 L20 18 L18 28 L16 24 L14 28 L12 18 L4 16 L12 14 Z" fill="${c}" stroke="white" stroke-width="1.5"/>
+          </svg>`,
+        bomber: `
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <ellipse cx="16" cy="16" rx="12" ry="6" fill="${c}" stroke="white" stroke-width="2"/>
+            <rect x="12" y="8" width="8" height="6" fill="${c}" stroke="white" stroke-width="1.5"/>
+          </svg>`,
+        helicopter: `
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <ellipse cx="16" cy="20" rx="10" ry="5" fill="${c}" stroke="white" stroke-width="2"/>
+            <line x1="6" y1="14" x2="26" y2="14" stroke="white" stroke-width="2"/>
+            <line x1="16" y1="10" x2="16" y2="14" stroke="white" stroke-width="2"/>
+            <line x1="14" y1="10" x2="18" y2="10" stroke="white" stroke-width="2"/>
+          </svg>`,
+        ship: `
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <path d="M6 20 L10 26 L22 26 L26 20 L24 16 L8 16 Z" fill="${c}" stroke="white" stroke-width="2"/>
+            <rect x="12" y="10" width="8" height="8" fill="${c}" stroke="white" stroke-width="1.5"/>
+            <line x1="20" y1="14" x2="24" y2="14" stroke="white" stroke-width="1.5"/>
+          </svg>`,
+        apc: `
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <rect x="6" y="14" width="20" height="9" rx="3" fill="${c}" stroke="white" stroke-width="2"/>
+            <rect x="10" y="11" width="10" height="5" fill="${c}" stroke="white" stroke-width="1.5"/>
+            <circle cx="9" cy="19" r="2" fill="#333"/>
+            <circle cx="23" cy="19" r="2" fill="#333"/>
+          </svg>`,
+        artillery: `
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <circle cx="16" cy="20" r="8" fill="${c}" stroke="white" stroke-width="2"/>
+            <line x1="16" y1="20" x2="28" y2="8" stroke="${c}" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="16" cy="20" r="3" fill="white"/>
+          </svg>`,
+        air_defense: `
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <circle cx="16" cy="20" r="8" fill="${c}" stroke="white" stroke-width="2"/>
+            <line x1="8" y1="8" x2="16" y2="14" stroke="${c}" stroke-width="3"/>
+            <line x1="24" y1="8" x2="16" y2="14" stroke="${c}" stroke-width="3"/>
+            <circle cx="16" cy="20" r="2" fill="white"/>
+          </svg>`,
+        default: `
+          <svg width="32" height="32" viewBox="0 0 32 32">
+            <rect x="8" y="8" width="16" height="16" rx="3" fill="${c}" stroke="white" stroke-width="2"/>
+          </svg>`
       };
 
       // 根据equipmentType选择形状
@@ -220,12 +297,12 @@ class Map2D {
         tank: 'tank',
         infantry: 'infantry',
         apc: 'apc',
-        artillery: 'tank',
-        air_defense: 'apc',
+        artillery: 'artillery',
+        air_defense: 'air_defense',
         fighter: 'fighter',
         bomber: 'bomber',
         helicopter: 'helicopter',
-        uav: 'fighter',
+        uav: 'helicopter',
         destroyer: 'ship',
         submarine: 'ship',
         carrier: 'ship',
@@ -236,8 +313,8 @@ class Map2D {
       return L.divIcon({
         className: 'unit-marker',
         html: shapes[shapeMap[type] || 'default'],
-        iconSize: [28, 28],
-        iconAnchor: [14, 14]
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
       });
     };
 
@@ -596,5 +673,142 @@ class Map2D {
       this.map.remove();
       this.map = null;
     }
+  }
+
+  // 切换底图
+  switchBaseLayer(type) {
+    if (this.baseLayers[type] && this.baseLayers[type] !== this.baseLayer) {
+      this.map.removeLayer(this.baseLayer);
+      this.baseLayer = this.baseLayers[type];
+      this.baseLayer.addTo(this.map);
+      this.baseLayer.setZIndex(-1); // 确保底图在最下层
+    }
+  }
+
+  // ========== 路径绘制功能 ==========
+
+  // 显示单位的路径
+  showPath(entityId, pathPoints) {
+    this.clearPath(entityId);
+
+    if (!pathPoints || pathPoints.length < 2) return;
+
+    // 将仿真坐标转为地理坐标
+    const latlngs = pathPoints.map(p => {
+      const geo = this.simToGeo(p.x, p.y);
+      return [geo.lat, geo.lng];
+    });
+
+    // 绘制路径线 - 抛物线效果（使用曲线）
+    const pathLine = L.polyline(latlngs, {
+      color: '#ffd700',
+      weight: 4,
+      opacity: 0.8,
+      dashArray: '10, 10',
+      className: 'unit-path',
+      smoothFactor: 1.5  // 平滑曲线
+    }).addTo(this.map);
+
+    // 添加箭头标记表示方向
+    const arrows = [];
+    for (let i = 0; i < latlngs.length - 1; i++) {
+      const arrow = L.polylineDecorator(pathLine, {
+        patterns: [
+          {
+            offset: `${(i + 0.5) * 100 / pathPoints.length}%`,
+            repeat: 0,
+            symbol: L.Symbol.arrowHead({
+              pixelSize: 10,
+              polygon: false,
+              pathOptions: {
+                color: '#ffd700',
+                weight: 2,
+                opacity: 0.7
+              }
+            })
+          }
+        ]
+      }).addTo(this.map);
+      arrows.push(arrow);
+    }
+
+    // 绘制路径点
+    const markers = L.layerGroup().addTo(this.map);
+    pathPoints.forEach((p, i) => {
+      const geo = this.simToGeo(p.x, p.y);
+
+      // 起点(绿色)、中间点(黄色)、终点(红色)
+      let color = '#ffd700';
+      let radius = 6;
+      if (i === 0) {
+        color = '#00ff00';
+        radius = 8;
+      } else if (i === pathPoints.length - 1) {
+        color = '#ff0000';
+        radius = 8;
+      }
+
+      const point = L.circleMarker([geo.lat, geo.lng], {
+        radius: radius,
+        fillColor: color,
+        color: '#fff',
+        weight: 2,
+        fillOpacity: 0.9
+      }).addTo(markers);
+
+      // 添加序号标签
+      point.bindTooltip(`${i + 1}`, {
+        permanent: true,
+        direction: 'center',
+        className: 'path-point-label'
+      });
+
+      // 添加悬停提示
+      const waypointType = i === 0 ? '起点' : i === pathPoints.length - 1 ? '终点' : `途经点 ${i}`;
+      point.bindPopup(`
+        <div style="font-size:12px;">
+          <b>${waypointType}</b><br/>
+          坐标: (${Math.round(p.x)}, ${Math.round(p.y)})
+        </div>
+      `);
+    });
+
+    this.pathLayers.set(entityId, { line: pathLine, markers, arrows });
+  }
+
+  // 更新路径显示（单位移动时更新进度）
+  updatePathProgress(entityId, currentIndex) {
+    const path = this.pathLayers.get(entityId);
+    if (!path) return;
+
+    // 可以添加视觉反馈显示单位已经行进到的路径点
+    const markers = path.markers.getLayers();
+    markers.forEach((marker, index) => {
+      if (index < currentIndex) {
+        marker.setStyle({
+          fillColor: '#00ff00',
+          fillOpacity: 0.4
+        });
+      }
+    });
+  }
+
+  // 清除单位的路径显示
+  clearPath(entityId) {
+    const path = this.pathLayers.get(entityId);
+    if (path) {
+      this.map.removeLayer(path.line);
+      this.map.removeLayer(path.markers);
+      this.pathLayers.delete(entityId);
+    }
+  }
+
+  // 清除所有路径
+  clearAllPaths() {
+    for (const [entityId, path] of this.pathLayers) {
+      this.map.removeLayer(path.line);
+      this.map.removeLayer(path.markers);
+    }
+    this.pathLayers.clear();
   }
 }

@@ -13,31 +13,32 @@
 <body>
   <!-- 顶部标题栏 -->
   <header class="header">
-    <h1>🎯 SimCombat Pro - 军事仿真推演系统</h1>
+    <h1>🎯 SimCombat Pro</h1>
     <nav class="toolbar">
-      <button id="btnSetArea" class="btn btn-toolbar" title="划定演习区域">
-        📍 划定演习区域
-      </button>
-      <button id="btnResetArea" class="btn btn-toolbar" title="重置演习区域">
-        🔄 重置区域
-      </button>
+      <!-- 推演控制 -->
+      <div class="toolbar-group">
+        <button id="btnStart" class="btn btn-toolbar btn-primary" title="开始/暂停推演">▶ 开始</button>
+        <button id="btnStop" class="btn btn-toolbar" title="停止推演">⏹ 停止</button>
+        <button id="btnStep" class="btn btn-toolbar" title="单步推演">⏭ 单步</button>
+        <button id="btnReset" class="btn btn-toolbar" title="重置推演">🔄 重置</button>
+      </div>
+      <div class="toolbar-divider"></div>
+      <!-- 演习区域控制 -->
+      <div class="toolbar-group">
+        <button id="btnSetArea" class="btn btn-toolbar" title="划定演习区域">📍 划定区域</button>
+        <button id="btnMoveArea" class="btn btn-toolbar" title="移动演习区域">✋ 移动区域</button>
+        <button id="btnDeleteArea" class="btn btn-toolbar" title="删除演习区域">🗑️ 删除区域</button>
+      </div>
     </nav>
     <div class="connection-status disconnected" id="connection">未连接</div>
   </header>
 
   <div class="main-container">
-    <!-- 左侧面板 -->
-    <aside class="control-panel">
-      <section class="panel-section">
-        <h3>📊 推演控制</h3>
-        <div class="btn-group">
-          <button id="btnStart" class="btn btn-primary">▶ 开始推演</button>
-          <button id="btnStop" class="btn btn-danger">⏹ 停止</button>
-          <button id="btnStep" class="btn btn-secondary">⏭ 单步</button>
-          <button id="btnReset" class="btn btn-warning">🔄 重置</button>
-        </div>
-      </section>
+    <!-- 左侧面板切换按钮 -->
+    <button id="toggleLeftPanel" class="panel-toggle left" title="收起/展开左侧面板">◀</button>
 
+    <!-- 左侧面板 -->
+    <aside class="control-panel" id="leftPanel">
       <section class="panel-section">
         <h3>⚙️ 推演模式</h3>
         <div class="setting-row">
@@ -60,6 +61,14 @@
             <option value="map2d">2D作战地图</option>
             <option value="3d">3D态势视图</option>
             <option value="split">分屏显示</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label>底图类型:</label>
+          <select id="baseMapType">
+            <option value="standard">标准地图</option>
+            <option value="satellite">卫星影像</option>
+            <option value="terrain">地形图</option>
           </select>
         </div>
         <div class="setting-row">
@@ -100,6 +109,8 @@
             <option value="addRed">添加红军</option>
             <option value="addBlue">添加蓝军</option>
             <option value="remove">删除单位</option>
+            <option value="move">移动单位</option>
+            <option value="setPath">设置路径</option>
           </select>
         </div>
         <div class="unit-selector" id="unitSelector" style="display:none">
@@ -197,6 +208,7 @@
       <section class="panel-section">
         <h3>📜 推演日志</h3>
         <div id="logPanel" class="log-panel"></div>
+        <button id="btnExportLogs" class="btn btn-secondary btn-small" style="margin-top:8px;width:100%">📥 导出日志</button>
       </section>
     </aside>
 
@@ -224,8 +236,11 @@
       </div>
     </div>
 
+    <!-- 右侧面板切换按钮 -->
+    <button id="toggleRightPanel" class="panel-toggle right" title="收起/展开右侧面板">▶</button>
+
     <!-- 右侧统计大屏 -->
-    <aside class="stats-panel">
+    <aside class="stats-panel" id="rightPanel">
       <h3>📊 战损统计大屏</h3>
 
       <div class="stats-card">
