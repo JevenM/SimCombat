@@ -215,6 +215,121 @@ class SimCombatApp {
 
     document.getElementById('statusText').textContent = state.isRunning ? '推演中' : '待机';
     document.getElementById('statusText').className = state.isRunning ? 'badge running' : 'badge stopped';
+
+    // 检测推演是否刚结束（之前有winner且现在isRunning为false）
+    if (!state.isRunning && state.stats?.winner && !this._endDialogShown) {
+      this._endDialogShown = true;
+      this.showEndGameDialog(state.stats);
+    }
+  }
+
+  /**
+   * 显示推演结束对话框
+   */
+  showEndGameDialog(stats) {
+    const winner = stats.winner;
+    const endReason = stats.endReason || '推演完成';
+
+    const resultHtml = `
+      <div id="endGameModal" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                  background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+                  border: 2px solid ${winner === 'red' ? '#ff4444' : winner === 'blue' ? '#4488ff' : '#888'};
+                  border-radius: 16px; padding: 30px; min-width: 380px; text-align: center; z-index: 10000;
+                  box-shadow: 0 0 50px ${winner === 'red' ? 'rgba(255,68,68,0.3)' : winner === 'blue' ? 'rgba(68,136,255,0.3)' : 'rgba(128,128,128,0.3)'};">
+        <div style="font-size: 42px; margin-bottom: 15px;">
+          ${winner === 'red' ? '🏆 🔴 红军胜利' : winner === 'blue' ? '🏆 🔵 蓝军胜利' : '🤝 平局'}
+        </div>
+        <div style="color: #8b949e; margin-bottom: 20px; font-size: 14px;">${endReason}</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px;">
+          <div>
+            <div style="color: #ff6b6b; font-size: 24px; font-weight: bold;">${stats.redCasualties || 0}</div>
+            <div style="color: #8b949e; font-size: 12px;">红军伤亡</div>
+          </div>
+          <div>
+            <div style="color: #4dabf7; font-size: 24px; font-weight: bold;">${stats.blueCasualties || 0}</div>
+            <div style="color: #8b949e; font-size: 12px;">蓝军伤亡</div>
+          </div>
+        </div>
+        <div style="margin-bottom: 20px;">
+          <p style="color: #8b949e; font-size: 13px; margin-bottom: 10px;">是否保存此次推演回放？</p>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button id="btnSaveEndReplay" style="background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+            💾 保存回放
+          </button>
+          <button id="btnSkipEndReplay" style="background: #6e7681; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+            跳过
+          </button>
+        </div>
+      </div>
+      <div id="endGameOverlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999;"></div>
+    `;
+
+    const div = document.createElement('div');
+    div.innerHTML = resultHtml;
+    document.body.appendChild(div);
+
+    // 保存回放按钮
+    document.getElementById('btnSaveEndReplay')?.addEventListener('click', () => {
+      // 关闭弹窗
+      document.getElementById('endGameModal')?.remove();
+      document.getElementById('endGameOverlay')?.remove();
+
+      // 保存回放
+      const now = new Date();
+      const name = `推演_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
+      this.send({ cmd: 'saveReplay', name });
+      this.addLog(`正在保存回放: ${name}`, 'info');
+
+      // 清理场景
+      this.cleanupAfterGame();
+    });
+
+    // 跳过按钮
+    document.getElementById('btnSkipEndReplay')?.addEventListener('click', () => {
+      // 关闭弹窗
+      document.getElementById('endGameModal')?.remove();
+      document.getElementById('endGameOverlay')?.remove();
+
+      // 清理场景
+      this.cleanupAfterGame();
+    });
+  }
+
+  /**
+   * 推演结束后清理场景
+   */
+  cleanupAfterGame() {
+    // 清除攻击动画
+    if (this.attackAnimations) {
+      this.attackAnimations.clearAll();
+    }
+
+    // 清除3D效果
+    if (this.view3d) {
+      this.view3d.clearEffects();
+    }
+
+    // 将编辑器模式改为仅查看
+    this.editorMode = 'view';
+    const modeSelect = document.getElementById('editorMode');
+    if (modeSelect) {
+      modeSelect.value = 'view';
+    }
+
+    //更新编辑器提示
+    const hint = document.getElementById('editorHint');
+    if (hint) {
+      hint.textContent = '💡 推演已结束，当前为仅查看模式';
+    }
+
+    // 清除地图上的范围圆圈等特效
+    this.map2d.clear();
+
+    // 重置结束标记（允许下次推演再次显示）
+    this._endDialogShown = false;
+
+    this.addLog('推演结束，场景已清理，切换为仅查看模式', 'info');
   }
 
   /**
