@@ -27,6 +27,76 @@ const sim = new Simulation({
   maxReplayFrames: 20000
 });
 
+// 回放存储（内存中，服务器重启后丢失）
+const savedReplays = new Map();
+
+// 创建 replay 目录
+const REPLAY_DIR = path.join(__dirname, 'replay');
+if (!fs.existsSync(REPLAY_DIR)) {
+  fs.mkdirSync(REPLAY_DIR, { recursive: true });
+  console.log(`创建回放目录: ${REPLAY_DIR}`);
+}
+
+// 从文件加载已保存的回放
+function loadReplaysFromDisk() {
+  try {
+    const files = fs.readdirSync(REPLAY_DIR);
+    let loadedCount = 0;
+    files.forEach(file => {
+      if (file.endsWith('.json')) {
+        try {
+          const filePath = path.join(REPLAY_DIR, file);
+          const content = fs.readFileSync(filePath, 'utf8');
+          const replayData = JSON.parse(content);
+          if (replayData.name && replayData.replay) {
+            savedReplays.set(replayData.name, replayData);
+            loadedCount++;
+          }
+        } catch (err) {
+          console.warn(`加载回放文件失败: ${file}`, err.message);
+        }
+      }
+    });
+    console.log(`从磁盘加载了 ${loadedCount} 个回放文件`);
+  } catch (err) {
+    console.error('读取回放目录失败:', err.message);
+  }
+}
+
+// 保存回放到磁盘
+function saveReplayToDisk(name, replayData) {
+  try {
+    const fileName = `${name.replace(/[^a-zA-Z0-9一-龥_-]/g, '_')}.json`;
+    const filePath = path.join(REPLAY_DIR, fileName);
+    fs.writeFileSync(filePath, JSON.stringify(replayData, null, 2));
+    console.log(`回放缓存到磁盘: ${fileName}`);
+    return true;
+  } catch (err) {
+    console.error('保存回放文件失败:', err.message);
+    return false;
+  }
+}
+
+// 删除磁盘上的回放文件
+function deleteReplayFromDisk(name) {
+  try {
+    const fileName = `${name.replace(/[^a-zA-Z0-9一-龥_-]/g, '_')}.json`;
+    const filePath = path.join(REPLAY_DIR, fileName);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`删除回放文件: ${fileName}`);
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.error('删除回放文件失败:', err.message);
+    return false;
+  }
+}
+
+// 启动时加载已有回放
+loadReplaysFromDisk();
+
 // 客户端集合
 const clients = new Set();
 
@@ -110,6 +180,8 @@ function handleCommand(ws, data) {
         const removed = sim.removeEntity(data.entityId);
         if (removed) {
           console.log(`Removed entity: ${data.entityId}`);
+          // 清空战斗事件，避免在移除实体时产生击杀特效
+          sim.blackboard.combatEvents = [];
           broadcastState();
         }
       }
@@ -174,6 +246,74 @@ function handleCommand(ws, data) {
       }
       break;
 
+    case 'setSmartAI':
+      if (data.enabled !== undefined) {
+        sim.useSmartAI = data.enabled;
+        console.log(`SmartAI ${data.enabled ? 'enabled' : 'disabled'}`);
+        ws.send(JSON.stringify({
+          type: 'configResult',
+          config: 'smartAI',
+          enabled: data.enabled
+        }));
+      }
+      break;
+
+    case 'setAITacticalStyle':
+      if (data.style) {
+        sim.setAITacticalStyle(data.style, data.aggression, data.formationEnabled);
+        console.log(`AI tactical style set to: ${data.style}, aggression: ${data.aggression}%`);
+        ws.send(JSON.stringify({
+          type: 'configResult',
+          config: 'tacticalStyle',
+          style: data.style,
+          aggression: data.aggression
+        }));
+      }
+      break;
+
+    case 'setAIAggression':
+      if (data.aggression !== undefined && sim.smartAI) {
+        sim.smartAI.config.aggression = data.aggression / 100;
+        console.log(`AI aggression set to: ${data.aggression}%`);
+        ws.send(JSON.stringify({
+          type: 'configResult',
+          config: 'aggression',
+          value: data.aggression
+        }));
+      }
+      break;
+
+    case 'setAIFormation':
+      if (data.enabled !== undefined && sim.smartAI) {
+        sim.smartAI.config.enableFormation = data.enabled;
+        console.log(`AI formation ${data.enabled ? 'enabled' : 'disabled'}`);
+        ws.send(JSON.stringify({
+          type: 'configResult',
+          config: 'formation',
+          enabled: data.enabled
+        }));
+      }
+      break;
+
+    case 'setLearningEnabled':
+      if (data.enabled !== undefined) {
+        sim.setLearningEnabled(data.enabled);
+        ws.send(JSON.stringify({
+          type: 'configResult',
+          config: 'learning',
+          enabled: data.enabled
+        }));
+      }
+      break;
+
+    case 'getLearningReport':
+      const report = sim.getLearningReport();
+      ws.send(JSON.stringify({
+        type: 'learningReport',
+        report
+      }));
+      break;
+
     case 'getEntityDetails':
       console.log('Received getEntityDetails:', data.entityId);
       if (data.entityId) {
@@ -211,6 +351,110 @@ function handleCommand(ws, data) {
       }
       break;
 
+    case 'saveReplay':
+      if (data.name && sim.replay && sim.replay.length > 0) {
+        // 获取第一帧作为初始场景
+        const firstFrame = sim.replay[0];
+        const lastFrame = sim.replay[sim.replay.length - 1];
+
+        const replayData = {
+          name: data.name,
+          savedAt: new Date().toISOString(),
+          initialScene: {
+            time: firstFrame.time,
+            entities: firstFrame.entities,
+            stats: firstFrame.stats
+          },
+          finalResult: {
+            time: lastFrame.time,
+            stats: lastFrame.stats,
+            winner: lastFrame.stats?.winner,
+            endReason: lastFrame.stats?.endReason
+          },
+          replay: [...sim.replay],
+          stats: { ...sim.stats },
+          entities: sim.entities.map(e => ({
+            id: e.id,
+            name: e.name,
+            side: e.side,
+            equipmentType: e.equipmentType
+          }))
+        };
+        savedReplays.set(data.name, replayData);
+
+        // 同时保存到磁盘
+        const savedToDisk = saveReplayToDisk(data.name, replayData);
+
+        console.log(`Replay saved: ${data.name} (${replayData.replay.length} frames)`);
+        ws.send(JSON.stringify({
+          type: 'replaySaved',
+          name: data.name,
+          frameCount: replayData.replay.length,
+          savedToDisk
+        }));
+      } else {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: '无法保存回放：名称无效或没有回放数据'
+        }));
+      }
+      break;
+
+    case 'listReplays':
+      const replays = Array.from(savedReplays.entries()).map(([name, data]) => ({
+        name,
+        savedAt: data.savedAt,
+        frameCount: data.replay.length,
+        entityCount: data.entities.length,
+        winner: data.stats.winner
+      }));
+      ws.send(JSON.stringify({
+        type: 'replayList',
+        replays
+      }));
+      break;
+
+    case 'loadReplay':
+      if (data.name && savedReplays.has(data.name)) {
+        const replayData = savedReplays.get(data.name);
+        ws.send(JSON.stringify({
+          type: 'replay',
+          replay: replayData.replay,
+          name: replayData.name,
+          savedAt: replayData.savedAt,
+          initialScene: replayData.initialScene || null,
+          finalResult: replayData.finalResult || null
+        }));
+        console.log(`Replay loaded: ${data.name}`);
+      } else {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: '回放不存在: ' + data.name
+        }));
+      }
+      break;
+
+    case 'deleteReplay':
+      if (data.name && savedReplays.has(data.name)) {
+        savedReplays.delete(data.name);
+
+        // 同时删除磁盘文件
+        const deletedFromDisk = deleteReplayFromDisk(data.name);
+
+        console.log(`Replay deleted: ${data.name}`);
+        ws.send(JSON.stringify({
+          type: 'replayDeleted',
+          name: data.name,
+          deletedFromDisk
+        }));
+      } else {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: '回放不存在: ' + data.name
+        }));
+      }
+      break;
+
     case 'replay':
       ws.send(JSON.stringify({
         type: 'replay',
@@ -227,6 +471,8 @@ function handleCommand(ws, data) {
 
     case 'reset':
       sim.stop();
+      // 清空战斗事件，避免在重置时产生击杀特效
+      sim.blackboard.combatEvents = [];
       sim.loadScenario(sim.sampleScenario());
       broadcastState();
       break;
@@ -238,6 +484,8 @@ function handleCommand(ws, data) {
       sim.entityBehaviors.clear();
       sim.time = 0;
       sim.stepCount = 0;
+      // 清空战斗事件，避免在清除时产生击杀特效
+      sim.blackboard.combatEvents = [];
       sim.stats = {
         redCasualties: 0,
         blueCasualties: 0,

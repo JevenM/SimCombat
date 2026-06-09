@@ -1,0 +1,6578 @@
+{
+  "name": "推演_20260609_0021",
+  "savedAt": "2026-06-08T16:21:44.235Z",
+  "replay": [
+    {
+      "time": 0,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "idle",
+          "detectedContacts": []
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4400,
+          "y": 4600,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "idle",
+          "detectedContacts": []
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "idle",
+          "detectedContacts": []
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "idle",
+          "detectedContacts": []
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "idle",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "idle",
+          "detectedContacts": []
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "idle",
+          "detectedContacts": []
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "idle",
+          "detectedContacts": []
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "idle",
+          "detectedContacts": []
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 0,
+        "blueCasualties": 0,
+        "redDamage": 0,
+        "blueDamage": 0,
+        "redUnits": 5,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 1080,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 1,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4400,
+          "y": 4600,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 8.0196914437727,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e21"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "regrouping",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 295.0903560383557,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 1,
+          "time": 1,
+          "attacker": "e17",
+          "attackerName": "99A主战坦克",
+          "attackerSide": "red",
+          "target": "e22",
+          "targetName": "99A主战坦克",
+          "damage": 105,
+          "hit": true,
+          "distance": 1077
+        },
+        {
+          "step": 1,
+          "time": 1,
+          "attacker": "e22",
+          "attackerName": "99A主战坦克",
+          "attackerSide": "blue",
+          "target": "e18",
+          "targetName": "99A主战坦克",
+          "damage": 130,
+          "hit": true,
+          "distance": 1000
+        },
+        {
+          "step": 1,
+          "time": 1,
+          "attacker": "e23",
+          "attackerName": "99A主战坦克",
+          "attackerSide": "blue",
+          "target": "e18",
+          "targetName": "99A主战坦克",
+          "damage": 118,
+          "hit": true,
+          "distance": 1077
+        },
+        {
+          "step": 1,
+          "time": 1,
+          "attacker": "e25",
+          "attackerName": "HQ-16防空导弹",
+          "attackerSide": "blue",
+          "target": "e18",
+          "targetName": "99A主战坦克",
+          "damage": 144,
+          "hit": true,
+          "distance": 949
+        }
+      ],
+      "stats": {
+        "redCasualties": 0,
+        "blueCasualties": 0,
+        "redDamage": 104.90964396164428,
+        "blueDamage": 391.9803085562273,
+        "redUnits": 5,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 1080,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 2,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4389.787339481142,
+          "y": 4594.593297372369,
+          "z": 27.4220703125,
+          "heading": 207.89727103094768,
+          "hp": 8.0196914437727,
+          "maxHp": 400,
+          "status": "retreating",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e21"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "regrouping",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 295.0903560383557,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 0,
+        "blueCasualties": 0,
+        "redDamage": 104.90964396164428,
+        "blueDamage": 391.9803085562273,
+        "redUnits": 5,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 1080,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 3,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4379.574678962284,
+          "y": 4589.186594744739,
+          "z": 27.4220703125,
+          "heading": 207.89727103094768,
+          "hp": 8.0196914437727,
+          "maxHp": 400,
+          "status": "retreating",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e21"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "regrouping",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 295.0903560383557,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e18",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 0,
+        "blueCasualties": 0,
+        "redDamage": 104.90964396164428,
+        "blueDamage": 391.9803085562273,
+        "redUnits": 5,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 1080,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 4,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4369.362018443427,
+          "y": 4583.779892117108,
+          "z": 27.4220703125,
+          "heading": 207.89727103094768,
+          "hp": 8.0196914437727,
+          "maxHp": 400,
+          "status": "retreating",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e21"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "regrouping",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 295.0903560383557,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 0,
+        "blueCasualties": 0,
+        "redDamage": 104.90964396164428,
+        "blueDamage": 391.9803085562273,
+        "redUnits": 5,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 1080,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 5,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": 207.89727103094768,
+          "hp": 8.0196914437727,
+          "maxHp": 400,
+          "status": "retreating",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e21"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "regrouping",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 295.0903560383557,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 0,
+        "blueCasualties": 0,
+        "redDamage": 104.90964396164428,
+        "blueDamage": 391.9803085562273,
+        "redUnits": 5,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 1080,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 6,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e21"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "regrouping",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 295.0903560383557,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e18",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 6,
+          "time": 6,
+          "attacker": "e25",
+          "attackerName": "HQ-16防空导弹",
+          "attackerSide": "blue",
+          "target": "e18",
+          "targetName": "99A主战坦克",
+          "damage": 163,
+          "hit": true,
+          "distance": 994
+        },
+        {
+          "step": 6,
+          "time": 6,
+          "type": "kill",
+          "killer": "e25",
+          "killerName": "HQ-16防空导弹",
+          "killerSide": "blue",
+          "victim": "e18",
+          "victimName": "99A主战坦克",
+          "victimSide": "red"
+        }
+      ],
+      "stats": {
+        "redCasualties": 1,
+        "blueCasualties": 0,
+        "redDamage": 104.90964396164428,
+        "blueDamage": 554.6843399557737,
+        "redUnits": 4,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 780,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 7,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e21"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "regrouping",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 155.6645852578465,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 7,
+          "time": 7,
+          "attacker": "e17",
+          "attackerName": "99A主战坦克",
+          "attackerSide": "red",
+          "target": "e22",
+          "targetName": "99A主战坦克",
+          "damage": 139,
+          "hit": true,
+          "distance": 1077
+        }
+      ],
+      "stats": {
+        "redCasualties": 1,
+        "blueCasualties": 0,
+        "redDamage": 244.3354147421535,
+        "blueDamage": 554.6843399557737,
+        "redUnits": 4,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 780,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 8,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "regrouping",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 155.6645852578465,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e19",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 1,
+        "blueCasualties": 0,
+        "redDamage": 244.3354147421535,
+        "blueDamage": 554.6843399557737,
+        "redUnits": 4,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 780,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 9,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e21"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "regrouping",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 155.6645852578465,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 1,
+        "blueCasualties": 0,
+        "redDamage": 244.3354147421535,
+        "blueDamage": 554.6843399557737,
+        "redUnits": 4,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 780,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 10,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e21"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 120,
+          "maxHp": 120,
+          "status": "regrouping",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 155.6645852578465,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 1,
+        "blueCasualties": 0,
+        "redDamage": 244.3354147421535,
+        "blueDamage": 554.6843399557737,
+        "redUnits": 4,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 780,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 11,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e21"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 155.6645852578465,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 11,
+          "time": 11,
+          "attacker": "e25",
+          "attackerName": "HQ-16防空导弹",
+          "attackerSide": "blue",
+          "target": "e21",
+          "targetName": "PLZ-05自行火炮",
+          "damage": 173,
+          "hit": true,
+          "distance": 1844
+        },
+        {
+          "step": 11,
+          "time": 11,
+          "type": "kill",
+          "killer": "e25",
+          "killerName": "HQ-16防空导弹",
+          "killerSide": "blue",
+          "victim": "e21",
+          "victimName": "PLZ-05自行火炮",
+          "victimSide": "red"
+        }
+      ],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 0,
+        "redDamage": 244.3354147421535,
+        "blueDamage": 727.7648812093264,
+        "redUnits": 3,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 12,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5200,
+          "y": 5200,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 155.6645852578465,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 0,
+        "redDamage": 244.3354147421535,
+        "blueDamage": 727.7648812093264,
+        "redUnits": 3,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 13,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5210.729064143438,
+          "y": 5204.291625657375,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 59.376371683411634,
+          "maxHp": 400,
+          "status": "retreating",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5100,
+          "y": 5100,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 13,
+          "time": 13,
+          "attacker": "e17",
+          "attackerName": "99A主战坦克",
+          "attackerSide": "red",
+          "target": "e22",
+          "targetName": "99A主战坦克",
+          "damage": 96,
+          "hit": true,
+          "distance": 1077
+        }
+      ],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 0,
+        "redDamage": 340.62362831658834,
+        "blueDamage": 727.7648812093264,
+        "redUnits": 3,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 14,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5221.458128286877,
+          "y": 5208.583251314751,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 59.376371683411634,
+          "maxHp": 400,
+          "status": "retreating",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5101.540048774816,
+          "y": 5102.574538801302,
+          "z": 49.2439453125,
+          "heading": 59.112797446212824,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e17",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 0,
+        "redDamage": 340.62362831658834,
+        "blueDamage": 727.7648812093264,
+        "redUnits": 3,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 15,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5232.187192430315,
+          "y": 5212.874876972126,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 59.376371683411634,
+          "maxHp": 400,
+          "status": "retreating",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5103.2595482199085,
+          "y": 5105.032855690262,
+          "z": 49.2439453125,
+          "heading": 55.028669949207426,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e17",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 0,
+        "redDamage": 340.62362831658834,
+        "blueDamage": 727.7648812093264,
+        "redUnits": 3,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 16,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 245.45187628025818,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5242.916256573753,
+          "y": 5217.166502629501,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 59.376371683411634,
+          "maxHp": 400,
+          "status": "retreating",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5105.123891482733,
+          "y": 5107.383222569408,
+          "z": 49.2439453125,
+          "heading": 51.57806626890351,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e17",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 16,
+          "time": 16,
+          "attacker": "e25",
+          "attackerName": "HQ-16防空导弹",
+          "attackerSide": "blue",
+          "target": "e17",
+          "targetName": "99A主战坦克",
+          "damage": 155,
+          "hit": true,
+          "distance": 1105
+        }
+      ],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 0,
+        "redDamage": 340.62362831658834,
+        "blueDamage": 882.3130049290683,
+        "redUnits": 3,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 17,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 245.45187628025818,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5253.645320717192,
+          "y": 5221.458128286877,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 59.376371683411634,
+          "maxHp": 400,
+          "status": "retreating",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5107.105824550944,
+          "y": 5109.635319721254,
+          "z": 49.2439453125,
+          "heading": 48.65096717338349,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 0,
+        "redDamage": 340.62362831658834,
+        "blueDamage": 882.3130049290683,
+        "redUnits": 3,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 18,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 245.45187628025818,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 59.376371683411634,
+          "maxHp": 400,
+          "status": "retreating",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5109.183985191354,
+          "y": 5111.798939054887,
+          "z": 49.2439453125,
+          "heading": 46.154175877587136,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e19",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 0,
+        "redDamage": 340.62362831658834,
+        "blueDamage": 882.3130049290683,
+        "redUnits": 3,
+        "blueUnits": 4,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 1010
+      }
+    },
+    {
+      "time": 19,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 245.45187628025818,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5111.2621458317635,
+          "y": 5113.962558388521,
+          "z": 49.2439453125,
+          "heading": 46.154175877587136,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e17",
+            "e22",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e22",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 19,
+          "time": 19,
+          "attacker": "e17",
+          "attackerName": "99A主战坦克",
+          "attackerSide": "red",
+          "target": "e22",
+          "targetName": "99A主战坦克",
+          "damage": 142,
+          "hit": true,
+          "distance": 1146
+        },
+        {
+          "step": 19,
+          "time": 19,
+          "type": "kill",
+          "killer": "e17",
+          "killerName": "99A主战坦克",
+          "killerSide": "red",
+          "victim": "e22",
+          "victimName": "99A主战坦克",
+          "victimSide": "blue"
+        }
+      ],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 1,
+        "redDamage": 482.4236976040198,
+        "blueDamage": 882.3130049290683,
+        "redUnits": 3,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 20,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 245.45187628025818,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5113.340306472173,
+          "y": 5116.126177722154,
+          "z": 49.2439453125,
+          "heading": 46.15417587758708,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e17",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 1,
+        "redDamage": 482.4236976040198,
+        "blueDamage": 882.3130049290683,
+        "redUnits": 3,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 21,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 101.34245187048512,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5115.418467112583,
+          "y": 5118.289797055788,
+          "z": 49.2439453125,
+          "heading": 46.15417587758708,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e19",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 100,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 21,
+          "time": 21,
+          "attacker": "e25",
+          "attackerName": "HQ-16防空导弹",
+          "attackerSide": "blue",
+          "target": "e17",
+          "targetName": "99A主战坦克",
+          "damage": 144,
+          "hit": true,
+          "distance": 1105
+        }
+      ],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 1,
+        "redDamage": 482.4236976040198,
+        "blueDamage": 1026.4224293388413,
+        "redUnits": 3,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 22,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 101.34245187048512,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5117.496627752993,
+          "y": 5120.453416389421,
+          "z": 49.2439453125,
+          "heading": 46.15417587758702,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e17",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 58.36339841779719,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 22,
+          "time": 22,
+          "attacker": "e19",
+          "attackerName": "ZBL-08轮式装甲车",
+          "attackerSide": "red",
+          "target": "e25",
+          "targetName": "HQ-16防空导弹",
+          "damage": 42,
+          "hit": true,
+          "distance": 1020
+        }
+      ],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 1,
+        "redDamage": 524.0602991862227,
+        "blueDamage": 1026.4224293388413,
+        "redUnits": 3,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 23,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 101.34245187048512,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5119.574788393403,
+          "y": 5122.617035723055,
+          "z": 49.2439453125,
+          "heading": 46.15417587758702,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 58.36339841779719,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 1,
+        "redDamage": 524.0602991862227,
+        "blueDamage": 1026.4224293388413,
+        "redUnits": 3,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 24,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 101.34245187048512,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5121.652949033813,
+          "y": 5124.780655056688,
+          "z": 49.2439453125,
+          "heading": 46.15417587758702,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e17",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 58.36339841779719,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 2,
+        "blueCasualties": 1,
+        "redDamage": 524.0602991862227,
+        "blueDamage": 1026.4224293388413,
+        "redUnits": 3,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 430,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 25,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 180,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100,
+          "y": 4900,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "deployed",
+          "detectedContacts": [
+            "e17",
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5123.731109674222,
+          "y": 5126.944274390322,
+          "z": 49.2439453125,
+          "heading": 46.154175877586965,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 58.36339841779719,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 25,
+          "time": 25,
+          "attacker": "e23",
+          "attackerName": "99A主战坦克",
+          "attackerSide": "blue",
+          "target": "e17",
+          "targetName": "99A主战坦克",
+          "damage": 129,
+          "hit": true,
+          "distance": 1217
+        },
+        {
+          "step": 25,
+          "time": 25,
+          "type": "kill",
+          "killer": "e23",
+          "killerName": "99A主战坦克",
+          "killerSide": "blue",
+          "victim": "e17",
+          "victimName": "99A主战坦克",
+          "victimSide": "red"
+        }
+      ],
+      "stats": {
+        "redCasualties": 3,
+        "blueCasualties": 1,
+        "redDamage": 524.0602991862227,
+        "blueDamage": 1155.8016193860483,
+        "redUnits": 2,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 130,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 26,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 43.25994168788819,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4100.727606885951,
+          "y": 4897.089572456195,
+          "z": 26.8220703125,
+          "heading": 284.03624346792645,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5125.809270314632,
+          "y": 5129.107893723955,
+          "z": 49.2439453125,
+          "heading": 46.154175877586965,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 58.36339841779719,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 26,
+          "time": 26,
+          "attacker": "e25",
+          "attackerName": "HQ-16防空导弹",
+          "attackerSide": "blue",
+          "target": "e19",
+          "targetName": "ZBL-08轮式装甲车",
+          "damage": 137,
+          "hit": true,
+          "distance": 1020
+        }
+      ],
+      "stats": {
+        "redCasualties": 3,
+        "blueCasualties": 1,
+        "redDamage": 524.0602991862227,
+        "blueDamage": 1292.5416776981601,
+        "redUnits": 2,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 130,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 27,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 43.25994168788819,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4101.452385985669,
+          "y": 4894.178439425083,
+          "z": 26.8220703125,
+          "heading": 283.9805813471992,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5127.887430955042,
+          "y": 5131.271513057589,
+          "z": 49.2439453125,
+          "heading": 46.15417587758691,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 58.36339841779719,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 3,
+        "blueCasualties": 1,
+        "redDamage": 524.0602991862227,
+        "blueDamage": 1292.5416776981601,
+        "redUnits": 2,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 130,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 28,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 43.25994168788819,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4102.174325804956,
+          "y": 4891.2666009739405,
+          "z": 26.8220703125,
+          "heading": 283.9247065165771,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5129.965591595452,
+          "y": 5133.435132391222,
+          "z": 49.2439453125,
+          "heading": 46.15417587758691,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e19",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 58.36339841779719,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 3,
+        "blueCasualties": 1,
+        "redDamage": 524.0602991862227,
+        "blueDamage": 1292.5416776981601,
+        "redUnits": 2,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 130,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 29,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 43.25994168788819,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4102.8934181517525,
+          "y": 4888.354058018893,
+          "z": 26.8220703125,
+          "heading": 283.8686840373957,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5132.043752235862,
+          "y": 5135.598751724856,
+          "z": 49.2439453125,
+          "heading": 46.15417587758685,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 58.36339841779719,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 3,
+        "blueCasualties": 1,
+        "redDamage": 524.0602991862227,
+        "blueDamage": 1292.5416776981601,
+        "redUnits": 2,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 130,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 30,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 43.25994168788819,
+          "maxHp": 180,
+          "status": "attacking",
+          "detectedContacts": [
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4103.609658459491,
+          "y": 4885.440812390767,
+          "z": 26.8220703125,
+          "heading": 283.8125852670246,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5134.121912876271,
+          "y": 5137.762371058489,
+          "z": 49.2439453125,
+          "heading": 46.154175877586795,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e19",
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 58.36339841779719,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [],
+      "stats": {
+        "redCasualties": 3,
+        "blueCasualties": 1,
+        "redDamage": 524.0602991862227,
+        "blueDamage": 1292.5416776981601,
+        "redUnits": 2,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 130,
+        "blueValue": 710
+      }
+    },
+    {
+      "time": 31,
+      "entities": [
+        {
+          "id": "e17",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4200,
+          "y": 4800,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e18",
+          "name": "99A主战坦克",
+          "side": "red",
+          "type": "tank",
+          "x": 4359.149357924569,
+          "y": 4578.373189489477,
+          "z": 27.4220703125,
+          "heading": -152.10272896905232,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e21",
+            "e22",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e19",
+          "name": "ZBL-08轮式装甲车",
+          "side": "red",
+          "type": "apc",
+          "x": 4300,
+          "y": 4700,
+          "z": 25.1220703125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 180,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e20",
+          "name": "步兵班",
+          "side": "red",
+          "type": "infantry",
+          "x": 4103.609658459491,
+          "y": 4885.440812390767,
+          "z": 26.8220703125,
+          "heading": -76.24351172650188,
+          "hp": 0,
+          "maxHp": 50,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e19"
+          ]
+        },
+        {
+          "id": "e21",
+          "name": "PLZ-05自行火炮",
+          "side": "red",
+          "type": "artillery",
+          "x": 3500,
+          "y": 4500,
+          "z": 1.7626953125,
+          "heading": 0,
+          "hp": 0,
+          "maxHp": 120,
+          "status": "destroyed",
+          "detectedContacts": []
+        },
+        {
+          "id": "e22",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5264.37438486063,
+          "y": 5225.749753944252,
+          "z": 49.8439453125,
+          "heading": 21.80140948635176,
+          "hp": 0,
+          "maxHp": 400,
+          "status": "destroyed",
+          "detectedContacts": [
+            "e17",
+            "e19",
+            "e20",
+            "e23",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e23",
+          "name": "99A主战坦克",
+          "side": "blue",
+          "type": "tank",
+          "x": 5400,
+          "y": 5000,
+          "z": 47.5439453125,
+          "heading": 0,
+          "hp": 400,
+          "maxHp": 400,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e24",
+            "e25"
+          ]
+        },
+        {
+          "id": "e24",
+          "name": "步兵班",
+          "side": "blue",
+          "type": "infantry",
+          "x": 5136.200073516681,
+          "y": 5139.925990392123,
+          "z": 49.2439453125,
+          "heading": 46.154175877586795,
+          "hp": 50,
+          "maxHp": 50,
+          "status": "supporting",
+          "detectedContacts": [
+            "e23",
+            "e25"
+          ]
+        },
+        {
+          "id": "e25",
+          "name": "HQ-16防空导弹",
+          "side": "blue",
+          "type": "air_defense",
+          "x": 5300,
+          "y": 4900,
+          "z": 1.2939453125,
+          "heading": 0,
+          "hp": 58.36339841779719,
+          "maxHp": 100,
+          "status": "attacking",
+          "detectedContacts": [
+            "e19",
+            "e20",
+            "e23",
+            "e24"
+          ]
+        }
+      ],
+      "combatEvents": [
+        {
+          "step": 31,
+          "time": 31,
+          "attacker": "e23",
+          "attackerName": "99A主战坦克",
+          "attackerSide": "blue",
+          "target": "e19",
+          "targetName": "ZBL-08轮式装甲车",
+          "damage": 134,
+          "hit": true,
+          "distance": 1140
+        },
+        {
+          "step": 31,
+          "time": 31,
+          "type": "kill",
+          "killer": "e23",
+          "killerName": "99A主战坦克",
+          "killerSide": "blue",
+          "victim": "e19",
+          "victimName": "ZBL-08轮式装甲车",
+          "victimSide": "red"
+        },
+        {
+          "step": 31,
+          "time": 31,
+          "attacker": "e25",
+          "attackerName": "HQ-16防空导弹",
+          "attackerSide": "blue",
+          "target": "e20",
+          "targetName": "步兵班",
+          "damage": 166,
+          "hit": true,
+          "distance": 1196
+        },
+        {
+          "step": 31,
+          "time": 31,
+          "type": "kill",
+          "killer": "e25",
+          "killerName": "HQ-16防空导弹",
+          "killerSide": "blue",
+          "victim": "e20",
+          "victimName": "步兵班",
+          "victimSide": "red"
+        }
+      ],
+      "stats": {
+        "redCasualties": 5,
+        "blueCasualties": 1,
+        "redDamage": 524.0602991862227,
+        "blueDamage": 1592.9488924018399,
+        "redUnits": 0,
+        "blueUnits": 3,
+        "startTime": 1780935674506,
+        "endTime": null,
+        "redValue": 0,
+        "blueValue": 710
+      }
+    }
+  ],
+  "stats": {
+    "redCasualties": 5,
+    "blueCasualties": 1,
+    "redDamage": 524.0602991862227,
+    "blueDamage": 1592.9488924018399,
+    "redUnits": 0,
+    "blueUnits": 3,
+    "startTime": 1780935674506,
+    "endTime": 1780935702172,
+    "redValue": 0,
+    "blueValue": 710,
+    "winner": "blue",
+    "endReason": "红军地面部队全部被歼灭"
+  },
+  "entities": [
+    {
+      "id": "e17",
+      "name": "99A主战坦克",
+      "side": "red",
+      "equipmentType": "tank"
+    },
+    {
+      "id": "e18",
+      "name": "99A主战坦克",
+      "side": "red",
+      "equipmentType": "tank"
+    },
+    {
+      "id": "e19",
+      "name": "ZBL-08轮式装甲车",
+      "side": "red",
+      "equipmentType": "apc"
+    },
+    {
+      "id": "e20",
+      "name": "步兵班",
+      "side": "red",
+      "equipmentType": "infantry"
+    },
+    {
+      "id": "e21",
+      "name": "PLZ-05自行火炮",
+      "side": "red",
+      "equipmentType": "artillery"
+    },
+    {
+      "id": "e22",
+      "name": "99A主战坦克",
+      "side": "blue",
+      "equipmentType": "tank"
+    },
+    {
+      "id": "e23",
+      "name": "99A主战坦克",
+      "side": "blue",
+      "equipmentType": "tank"
+    },
+    {
+      "id": "e24",
+      "name": "步兵班",
+      "side": "blue",
+      "equipmentType": "infantry"
+    },
+    {
+      "id": "e25",
+      "name": "HQ-16防空导弹",
+      "side": "blue",
+      "equipmentType": "air_defense"
+    }
+  ]
+}

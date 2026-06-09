@@ -66,36 +66,87 @@
         <div class="setting-row">
           <label>底图类型:</label>
           <select id="baseMapType">
-            <option value="standard">标准地图</option>
-            <option value="satellite">卫星影像</option>
-            <option value="terrain">地形图</option>
+            <option value="offline" selected>离线网格(快速)</option>
+            <option value="standard">标准地图(在线)</option>
+            <option value="satellite">卫星影像(在线)</option>
+            <option value="terrain">地形图(在线)</option>
           </select>
         </div>
         <div class="setting-row">
-          <label><input type="checkbox" id="showLabels" checked> 显示标签</label>
+          <label>地图模式:</label>
+          <label class="switch">
+            <input type="checkbox" id="offlineMode" checked>
+            <span class="slider"></span>
+          </label>
+          <span id="offlineStatus" style="font-size:11px; color:#58a6ff;">离线模式</span>
+        </div>
+        <div class="setting-row" id="cacheControls" style="display:flex;">
+          <button id="btnCacheArea" class="btn btn-small">缓存当前区域</button>
+          <button id="btnClearCache" class="btn btn-small">清理缓存</button>
+        </div>
+        <div class="setting-row" title="显示/隐藏单位名称标签">
+          <label><input type="checkbox" id="showLabels"> 显示单位名称标签</label>
+          <span class="hint-icon" title="在地图上显示单位名称标签，不影响推演">ⓘ</span>
+        </div>
+        <div class="setting-row" title="显示/隐藏武器射程圆圈">
+          <label><input type="checkbox" id="showRange"> 显示武器射程</label>
+          <span class="hint-icon" title="显示单位的攻击范围圆圈，蓝色虚线表示">ⓘ</span>
         </div>
         <div class="setting-row">
-          <label><input type="checkbox" id="showRange"> 显示射程</label>
-        </div>
-        <div class="setting-row">
-          <label><input type="checkbox" id="showTerrain" checked> 显示地形</label>
+          <label><input type="checkbox" id="showTerrain"> 显示地形</label>
         </div>
         <div class="legend" style="margin-top:10px; padding:8px; background:#0d1117; border-radius:4px; font-size:11px;">
-          <div style="margin-bottom:4px; color:#8b949e;">📍 图例说明:</div>
+          <div style="margin-bottom:4px; color:#8b949e;">📍 图例:</div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
             <span style="display:flex; align-items:center; gap:4px;">
               <span style="width:12px; height:12px; border:2px dashed #ff6b6b; border-radius:50%; opacity:0.6;"></span>
-              <span>武器射程</span>
+              <span>射程(短虚)</span>
             </span>
             <span style="display:flex; align-items:center; gap:4px;">
-              <span style="width:12px; height:12px; border:2px dashed #339af0; border-radius:50%; opacity:0.5;"></span>
-              <span>雷达范围</span>
+              <span style="width:12px; height:12px; border:2px dashed #339af0; border-radius:50%; opacity:0.6;"></span>
+              <span>雷达(长虚)</span>
             </span>
             <span style="display:flex; align-items:center; gap:4px;">
-              <span style="width:12px; height:12px; background:rgba(255,135,135,0.2); border-radius:50%;"></span>
-              <span>视野范围</span>
+              <span style="width:12px; height:12px; border:2px solid #51cf66; border-radius:50%; opacity:0.4;"></span>
+              <span>视野(实线)</span>
             </span>
           </div>
+        </div>
+      </section>
+
+      <!-- AI智能配置 -->
+      <section class="panel-section ai-config">
+        <h3>🤖 AI智能配置</h3>
+        <div class="setting-row">
+          <label>智能AI:</label>
+          <label class="switch">
+            <input type="checkbox" id="enableSmartAI" checked>
+            <span class="slider"></span>
+          </label>
+          <span id="smartAIStatus" style="font-size:11px; color:#58a6ff;">已启用</span>
+        </div>
+        <div class="setting-row">
+          <label>战术风格:</label>
+          <select id="tacticalStyle">
+            <option value="aggressive">激进进攻</option>
+            <option value="balanced" selected>平衡战术</option>
+            <option value="defensive">保守防御</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <label> AI激进程度:</label>
+          <input type="range" id="aiAggression" min="0" max="100" value="50" style="width:80px;">
+          <span id="aiAggressionValue" style="font-size:11px; min-width:30px;">50%</span>
+        </div>
+        <div class="setting-row">
+          <label>编队协同:</label>
+          <label class="switch">
+            <input type="checkbox" id="enableFormation" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="ai-hint" style="margin-top:8px; padding:8px; background:#0d1117; border-radius:4px; font-size:10px; color:#8b949e; border-left:3px solid #58a6ff;">
+          <div id="aiHintText">💡 智能AI启用：单位将自动选择最佳目标、利用地形、协同攻击</div>
         </div>
       </section>
 
@@ -118,22 +169,27 @@
           <select id="unitType">
             <optgroup label="地面单位">
               <option value="infantry">🪖 步兵班</option>
-              <option value="tank">🛡️ 主战坦克</option>
-              <option value="apc">🚛 装甲运兵车</option>
-              <option value="artillery">💥 自行火炮</option>
-              <option value="air_defense">🎯 防空导弹</option>
+              <option value="tank">🛡️ 99A主战坦克</option>
+              <option value="apc">🚛 ZBL-08装甲车</option>
+              <option value="artillery">💥 PLZ-05自行火炮</option>
+              <option value="mlrs">🚀 PHL-03火箭炮</option>
+              <option value="air_defense">🎯 HQ-16防空导弹</option>
+              <option value="command">📻 指挥车</option>
+              <option value="jamming">📡 电子对抗车</option>
             </optgroup>
             <optgroup label="空中单位">
-              <option value="fighter">✈️ 战斗机</option>
-              <option value="bomber">🚀 轰炸机</option>
-              <option value="helicopter">🚁 武装直升机</option>
-              <option value="uav">📡 侦察无人机</option>
+              <option value="fighter">✈️ 歼-20战斗机</option>
+              <option value="bomber">🚀 轰-6K轰炸机</option>
+              <option value="helicopter">🚁 武直-10</option>
+              <option value="uav">📡 攻击-2无人机</option>
+              <option value="awacs">📡 空警-500预警机</option>
             </optgroup>
             <optgroup label="海上单位">
-              <option value="destroyer">🚢 驱逐舰</option>
-              <option value="submarine">🔱 攻击潜艇</option>
-              <option value="carrier">🛳️ 航空母舰</option>
-              <option value="landing_ship">⛴️ 两栖攻击舰</option>
+              <option value="destroyer">🚢 055型驱逐舰</option>
+              <option value="frigate">⚓ 054A型护卫舰</option>
+              <option value="submarine">🔱 093型核潜艇</option>
+              <option value="carrier">🛳️ 辽宁舰航母</option>
+              <option value="landing_ship">⛴️ 071型两栖舰</option>
             </optgroup>
           </select>
         </div>
@@ -150,10 +206,24 @@
         <h3>📁 数据操作</h3>
         <div class="btn-group">
           <button id="btnLoad" class="btn btn-secondary">📂 加载想定</button>
-          <button id="btnSave" class="btn btn-secondary">💾 保存推演</button>
-          <button id="btnReplay" class="btn btn-info">📹 回放</button>
         </div>
         <input type="file" id="fileInput" style="display:none" accept=".json">
+      </section>
+
+      <section class="panel-section">
+        <h3>📹 推演回放</h3>
+        <div class="setting-row">
+          <label>当前回放:</label>
+          <select id="savedReplays">
+            <option value="">-- 选择已保存回放 --</option>
+          </select>
+        </div>
+        <div class="btn-group">
+          <button id="btnSaveReplay" class="btn btn-secondary" title="保存当前推演为回放">💾 保存</button>
+          <button id="btnLoadReplay" class="btn btn-info" title="加载选定回放">📂 读取并播放</button>
+        </div>
+        <div id="replayInfo" style="margin-top:8px; padding:6px; background:#0d1117; border-radius:4px; font-size:11px; color:#8b949e; display:none;">
+        </div>
       </section>
 
       <section class="panel-section">
@@ -194,12 +264,12 @@
         <div class="preset-scenarios">
           <select id="presetScenario">
             <option value="">-- 选择预设想定 --</option>
-            <option value="skirmish">遭遇战 (小规模)</option>
-            <option value="assault">进攻作战 (中规模)</option>
-            <option value="combined">联合作战 (大规模)</option>
-            <option value="naval">海空对抗</option>
-            <option value="asymmetric">非对称作战</option>
-            <option value="air_superiority">制空权争夺</option>
+            <option value="skirmish">遭遇战（近距离）</option>
+            <option value="urban">城市巷战（近距离）</option>
+            <option value="assault">进攻作战（中距离）</option>
+            <option value="combined">联合作战（多兵种）</option>
+            <option value="firepower">火力打击（炮兵支援）</option>
+            <option value="asymmetric">非对称作战（游击战）</option>
           </select>
           <button id="btnLoadPreset" class="btn btn-secondary" style="margin-top:8px; width:100%">📥 加载预设想定</button>
         </div>
@@ -232,6 +302,13 @@
         <button id="replayPlay">▶</button>
         <input type="range" id="replaySlider" min="0" max="100" value="0">
         <span id="replayTime">0:00 / 0:00</span>
+        <select id="replaySpeed" title="回放速率" style="background:#21262d;border:1px solid #30363d;color:#c9d1d9;border-radius:4px;padding:4px 8px;font-size:12px;cursor:pointer;">
+          <option value="0.5">0.5x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+          <option value="3">3x</option>
+        </select>
         <button id="replayClose">✕</button>
       </div>
     </div>
@@ -317,6 +394,8 @@
 
   <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet Polyline Decorator for arrows -->
+  <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
   <!-- 攻击动画 -->
   <script src="js/AttackAnimations.js"></script>
   <!-- 主程序 -->

@@ -18,6 +18,7 @@ class SimCombatApp {
     this.replayInterval = null;
     this.replayIndex = 0;
     this.replayPlaying = false;
+    this.replaySpeed = 1; // 默认1倍速
 
     this.init();
   }
@@ -34,8 +35,12 @@ class SimCombatApp {
     this.exerciseAreaSet = false;
     this.map2d.clearExerciseArea();
 
-    // 初始化攻击动画管理器
-    this.attackAnimations = null; // 等待地图初始化完成后再创建
+    // 初始化攻击动画管理器 - 立即创建（地图init是同步的）
+    this.attackAnimations = null;
+    if (this.map2d.map) {
+      this.attackAnimations = new AttackAnimations(this.map2d);
+      console.log('攻击动画管理器已初始化');
+    }
 
     // 设置实体点击回调
     this.map2d.onEntityClick = (entity) => this.onEntityClick(entity);
@@ -43,13 +48,6 @@ class SimCombatApp {
       const entity = this.state?.entities.find(e => e.id === id);
       if (entity) this.onEntityClick(entity);
     };
-
-    // 等待地图初始化后创建动画管理器
-    setTimeout(() => {
-      if (this.map2d.map) {
-        this.attackAnimations = new AttackAnimations(this.map2d.map);
-      }
-    }, 1000);
 
     // 绑定事件
     this.bindEvents();
@@ -70,6 +68,15 @@ class SimCombatApp {
     this.ws.onopen = () => {
       this.updateConnectionStatus('connected');
       this.addLog('已连接到服务器', 'success');
+
+      // 连接成功后请求回放列表
+      this.refreshReplayList();
+
+      // 根据当前模式初始化状态
+      if (this.simMode === 'exercise') {
+        this.send({ cmd: 'clearAllEntities' });
+        console.log('演习模式：已发送清空实体命令');
+      }
     };
 
     this.ws.onmessage = (event) => {
@@ -94,10 +101,26 @@ class SimCombatApp {
         break;
       case 'terrain':
         this.terrain = data.terrain;
+        if (this.map2d && this.terrain) {
+          this.map2d.loadTerrain(this.terrain);
+        }
         break;
       case 'replay':
         this.replay = data.replay;
-        this.startReplay();
+        this.replayInitialScene = data.initialScene || null;
+        this.replayFinalResult = data.finalResult || null;
+        this.startReplay(data.name);
+        break;
+      case 'replayList':
+        this.updateReplayList(data.replays);
+        break;
+      case 'replaySaved':
+        this.addLog(`回放已保存: ${data.name} (${data.frameCount}帧)`, 'success');
+        this.refreshReplayList();
+        break;
+      case 'replayDeleted':
+        this.addLog(`回放已删除: ${data.name}`, 'info');
+        this.refreshReplayList();
         break;
       case 'error':
         this.addLog(`错误: ${data.message}`, 'error');
@@ -123,6 +146,16 @@ class SimCombatApp {
     // 更新视图
     this.map2d.updateEntities(state.entities, showLabels, showRange);
     this.view3d.updateEntities(state.entities, showLabels, showRange);
+
+    // 更新攻击线位置（跟随移动的单位）
+    if (this.attackAnimations && state.isRunning) {
+      this.attackAnimations.updateAttackLinePositions(state.entities);
+    }
+
+    // 推演停止时清除所有攻击动画
+    if (!state.isRunning && this.attackAnimations) {
+      this.attackAnimations.clearAll();
+    }
 
     // 更新统计面板
     this.statsPanel.update(state.stats, state.combatEvents || [], state.isRunning, state.time);
@@ -152,18 +185,49 @@ class SimCombatApp {
 
     // 添加战斗日志
     if (state.combatEvents && state.combatEvents.length > 0) {
+      console.log(`收到 ${state.combatEvents.length} 个战斗事件:`, state.combatEvents);
+      console.log(`当前实体数量: ${state.entities?.length || 0}`, state.entities);
       for (const event of state.combatEvents) {
         this.addCombatLog(event);
+        // 触发攻击动画
+        if (this.attackAnimations) {
+          this.attackAnimations.handleCombatEvent(event, state.entities);
+        } else {
+          // 如果动画管理器未初始化，尝试立即创建
+          if (this.map2d && this.map2d.map) {
+            console.log('延迟初始化攻击动画管理器');
+            this.attackAnimations = new AttackAnimations(this.map2d);
+            this.attackAnimations.handleCombatEvent(event, state.entities);
+          }
+        }
       }
+    }
+
+    // 清理过期的持续攻击线（超过3秒未更新的攻击线）
+    if (this.attackAnimations) {
+      this.attackAnimations.cleanupStaleAttacks(3000);
     }
 
     // 更新按钮状态
     const startBtn = document.getElementById('btnStart');
-    startBtn.textContent = state.isRunning ? '⏸ 暂停' : '▶ 开始推演';
+    startBtn.textContent = state.isRunning ? '⏸ 暂停' : '▶ 开始';
     startBtn.className = state.isRunning ? 'btn btn-warning' : 'btn btn-primary';
 
     document.getElementById('statusText').textContent = state.isRunning ? '推演中' : '待机';
     document.getElementById('statusText').className = state.isRunning ? 'badge running' : 'badge stopped';
+  }
+
+  /**
+   * 仅更新显示（不处理战斗事件）- 用于勾选框切换等场景
+   */
+  updateDisplayOnly(state) {
+    this.state = state;
+    const showLabels = document.getElementById('showLabels')?.checked ?? false;
+    const showRange = document.getElementById('showRange')?.checked ?? false;
+
+    // 只更新视图，不触发攻击动画
+    this.map2d.updateEntities(state.entities, showLabels, showRange);
+    this.view3d.updateEntities(state.entities, showLabels, showRange);
   }
 
   bindEvents() {
@@ -194,6 +258,10 @@ class SimCombatApp {
       this.send({ cmd: 'reset' });
       this.statsPanel.reset();
       this.addLog('推演已重置', 'info');
+      // 清除所有攻击动画
+      if (this.attackAnimations) {
+        this.attackAnimations.clearAll();
+      }
     });
 
     // 演习区域设置按钮
@@ -240,7 +308,7 @@ class SimCombatApp {
     }
 
     // 视图切换
-    document.getElementById('viewMode').addEventListener('change', (e) => {
+    document.getElementById('viewMode')?.addEventListener('change', (e) => {
       const mode = e.target.value;
       const map2d = document.getElementById('map2d');
       const view3d = document.getElementById('view3d');
@@ -270,18 +338,20 @@ class SimCombatApp {
     this.initScenarioEditor();
 
     // 数据操作
-    document.getElementById('btnLoad').addEventListener('click', () => {
-      document.getElementById('fileInput').click();
+    document.getElementById('btnLoad')?.addEventListener('click', () => {
+      document.getElementById('fileInput')?.click();
     });
 
-    document.getElementById('btnSave').addEventListener('click', () => this.saveState());
-    document.getElementById('btnReplay').addEventListener('click', () => this.send({ cmd: 'replay' }));
+    document.getElementById('btnSaveScenario')?.addEventListener('click', () => this.saveState());
+
+    // 回放管理
+    this.initReplayManager();
 
     // 查看红方/蓝方位置
-    document.getElementById('btnViewRed').addEventListener('click', () => this.focusOnSide('red'));
-    document.getElementById('btnViewBlue').addEventListener('click', () => this.focusOnSide('blue'));
+    document.getElementById('btnViewRed')?.addEventListener('click', () => this.focusOnSide('red'));
+    document.getElementById('btnViewBlue')?.addEventListener('click', () => this.focusOnSide('blue'));
 
-    document.getElementById('fileInput').addEventListener('change', (e) => {
+    document.getElementById('fileInput')?.addEventListener('change', (e) => {
       this.handleFileUpload(e.target.files[0]);
     });
 
@@ -292,33 +362,105 @@ class SimCombatApp {
       }
     });
 
-    // 设置变更
-    document.getElementById('showLabels').addEventListener('change', () => {
-      if (this.state) this.updateState(this.state);
+    // 设置变更 - 只更新显示，不处理战斗事件
+    document.getElementById('showLabels')?.addEventListener('change', () => {
+      if (this.state) this.updateDisplayOnly(this.state);
     });
-    document.getElementById('showRange').addEventListener('change', () => {
-      if (this.state) this.updateState(this.state);
+    document.getElementById('showRange')?.addEventListener('change', () => {
+      if (this.state) this.updateDisplayOnly(this.state);
+    });
+    document.getElementById('showTerrain')?.addEventListener('change', (e) => {
+      this.map2d.showTerrainOverlay(e.target.checked);
     });
 
     // 底图切换
     document.getElementById('baseMapType')?.addEventListener('change', (e) => {
       this.map2d.switchBaseLayer(e.target.value);
+      // 更新离线模式状态显示
+      const isOffline = e.target.value === 'offline';
+      const offlineStatus = document.getElementById('offlineStatus');
+      if (offlineStatus) {
+        offlineStatus.textContent = isOffline ? '离线模式' : '在线模式';
+        offlineStatus.style.color = isOffline ? '#58a6ff' : '#6e7681';
+      }
+      // 显示/隐藏缓存控制按钮
+      const cacheControls = document.getElementById('cacheControls');
+      if (cacheControls) {
+        cacheControls.style.display = isOffline ? 'flex' : 'none';
+      }
     });
+
+    // 离线模式切换
+    document.getElementById('offlineMode')?.addEventListener('change', (e) => {
+      const enabled = e.target.checked;
+      this.map2d.setOfflineMode(enabled);
+      document.getElementById('offlineStatus').textContent = enabled ? '离线模式' : '在线模式';
+      document.getElementById('offlineStatus').style.color = enabled ? '#58a6ff' : '#6e7681';
+      // 显示/隐藏缓存控制按钮
+      const cacheControls = document.getElementById('cacheControls');
+      if (cacheControls) {
+        cacheControls.style.display = enabled ? 'flex' : 'none';
+      }
+      this.addLog(enabled ? '已切换到离线地图模式' : '已切换到在线地图模式', 'info');
+    });
+
+    // 缓存当前区域
+    document.getElementById('btnCacheArea')?.addEventListener('click', async () => {
+      if (!this.map2d) return;
+      const bounds = this.map2d.map.getBounds();
+      const zoom = this.map2d.map.getZoom();
+
+      // 显示开始缓存提示
+      this.addLog('开始缓存地图瓦片...', 'info');
+      document.getElementById('btnCacheArea').disabled = true;
+      document.getElementById('btnCacheArea').textContent = '缓存中...';
+
+      try {
+        const result = await this.map2d.prefetchArea(bounds, zoom, Math.min(zoom + 2, 17));
+        this.addLog(`地图缓存完成: ${result.cached}/${result.total} 个瓦片`, 'success');
+        if (result.failed > 0) {
+          this.addLog(`缓存失败: ${result.failed} 个瓦片`, 'warning');
+        }
+      } catch (error) {
+        this.addLog(`缓存失败: ${error.message}`, 'error');
+      } finally {
+        document.getElementById('btnCacheArea').disabled = false;
+        document.getElementById('btnCacheArea').textContent = '缓存当前区域';
+      }
+    });
+
+    // 清理缓存
+    document.getElementById('btnClearCache')?.addEventListener('click', async () => {
+      if (!this.map2d) return;
+      await this.map2d.clearOldCache();
+      this.addLog('已清理过期地图缓存', 'info');
+    });
+
+    // AI智能配置
+    this.initAIConfig();
 
     // 回放控制
-    document.getElementById('replayPlay').addEventListener('click', () => {
+    document.getElementById('replayPlay')?.addEventListener('click', () => {
       this.replayPlaying = !this.replayPlaying;
-      document.getElementById('replayPlay').textContent = this.replayPlaying ? '⏸' : '▶';
+      const btn = document.getElementById('replayPlay');
+      if (btn) btn.textContent = this.replayPlaying ? '⏸' : '▶';
     });
 
-    document.getElementById('replaySlider').addEventListener('input', (e) => {
+    document.getElementById('replaySlider')?.addEventListener('input', (e) => {
       this.replayIndex = parseInt(e.target.value);
       this.updateReplayFrame();
     });
 
-    document.getElementById('replayClose').addEventListener('click', () => {
+    document.getElementById('replayClose')?.addEventListener('click', () => {
       this.stopReplay();
-      document.getElementById('replayBar').style.display = 'none';
+      const bar = document.getElementById('replayBar');
+      if (bar) bar.style.display = 'none';
+    });
+
+    // 回放速率控制
+    document.getElementById('replaySpeed')?.addEventListener('change', (e) => {
+      this.replaySpeed = parseFloat(e.target.value);
+      this.addLog(`回放速率调整为 ${this.replaySpeed}x`, 'info');
     });
   }
 
@@ -332,42 +474,193 @@ class SimCombatApp {
     this.map2d.highlightEntity(entity.id);
   }
 
-  startReplay() {
-    if (!this.replay || this.replay.length === 0) return;
+  startReplay(name) {
+    if (!this.replay || this.replay.length === 0) {
+      this.addLog('没有可用的回放数据', 'warning');
+      return;
+    }
 
-    document.getElementById('replayBar').style.display = 'flex';
-    document.getElementById('replaySlider').max = this.replay.length - 1;
+    // 清除之前的攻击动画
+    if (this.attackAnimations) {
+      this.attackAnimations.clearAll();
+    }
+
+    const replayBar = document.getElementById('replayBar');
+    const replaySlider = document.getElementById('replaySlider');
+    if (replayBar) replayBar.style.display = 'flex';
+    if (replaySlider) replaySlider.max = this.replay.length - 1;
     this.replayIndex = 0;
     this.replayPlaying = true;
+    this.replaySpeed = this.replaySpeed || 1; // 默认1倍速
 
-    this.replayInterval = setInterval(() => {
+    // 显示初始场景（如果存在）
+    if (this.replayInitialScene) {
+      this.map2d.updateEntities(this.replayInitialScene.entities || [], true, false);
+      this.view3d.updateEntities(this.replayInitialScene.entities || [], true, false);
+      this.statsPanel.update(this.replayInitialScene.stats || {}, [], false, this.replayInitialScene.time || 0);
+    }
+
+    // 显示回放名称
+    const replayTitle = name ? `回放: ${name}` : '推演回放';
+    const replayTime = document.getElementById('replayTime');
+    if (replayTime) replayTime.textContent = `${replayTitle} (0/${this.replay.length})`;
+
+    this.addLog(`开始${replayTitle}`, 'info');
+
+    // 清除之前的 interval
+    if (this.replayInterval) {
+      clearInterval(this.replayInterval);
+    }
+
+    const playFrame = () => {
       if (!this.replayPlaying) return;
 
       if (this.replayIndex < this.replay.length - 1) {
         this.replayIndex++;
         this.updateReplayFrame();
+        // 根据速率设置下一帧的延迟
+        const delay = 200 / this.replaySpeed;
+        this.replayInterval = setTimeout(playFrame, delay);
       } else {
+        // 回放结束
         this.replayPlaying = false;
-        document.getElementById('replayPlay').textContent = '▶';
+        const btn = document.getElementById('replayPlay');
+        if (btn) btn.textContent = '▶';
+        // 显示推演结果
+        this.showReplayResult();
+        // 停止场景中的动画
+        if (this.attackAnimations) {
+          this.attackAnimations.clearAll();
+        }
       }
-    }, 200);
+    };
+
+    // 开始播放
+    const initialDelay = 200 / this.replaySpeed;
+    this.replayInterval = setTimeout(playFrame, initialDelay);
   }
 
   stopReplay() {
     this.replayPlaying = false;
-    clearInterval(this.replayInterval);
+    if (this.replayInterval) {
+      clearTimeout(this.replayInterval);
+    }
+  }
+
+  /**
+   * 显示回放结束时的推演结果
+   */
+  showReplayResult() {
+    // 优先使用保存的最终结果（如果有）
+    const finalData = this.replayFinalResult || {};
+    const stats = finalData.stats || {};
+    const winner = stats.winner || finalData.winner;
+    const endReason = finalData.endReason || '推演完成';
+
+    // 如果没有保存的最终结果，使用最后一帧
+    if (!this.replayFinalResult && this.replay && this.replay.length > 0) {
+      const lastFrame = this.replay[this.replay.length - 1];
+      const lastStats = lastFrame.stats || {};
+      this.replayFinalResult = {
+        stats: lastStats,
+        winner: lastStats.winner,
+        endReason: lastStats.endReason || '推演完成'
+      };
+    }
+
+    const finalStats = this.replayFinalResult?.stats || stats;
+
+    // 创建结果弹窗
+    const resultHtml = `
+      <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+                  background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+                  border: 2px solid ${winner === 'red' ? '#ff4444' : winner === 'blue' ? '#4488ff' : '#888'};
+                  border-radius: 16px; padding: 30px; min-width: 350px; text-align: center; z-index: 10000;
+                  box-shadow: 0 0 50px ${winner === 'red' ? 'rgba(255,68,68,0.3)' : winner === 'blue' ? 'rgba(68,136,255,0.3)' : 'rgba(128,128,128,0.3)'};">
+        <div style="font-size: 48px; margin-bottom: 15px;">
+          ${winner === 'red' ? '🏆 🔴 红军胜利' : winner === 'blue' ? '🏆 🔵 蓝军胜利' : '🤝 平局'}
+        </div>
+        <div style="color: #8b949e; margin-bottom: 20px; font-size: 14px;">${endReason}</div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px;">
+          <div>
+            <div style="color: #ff6b6b; font-size: 24px; font-weight: bold;">${finalStats.redCasualties || 0}</div>
+            <div style="color: #8b949e; font-size: 12px;">红军伤亡</div>
+          </div>
+          <div>
+            <div style="color: #4dabf7; font-size: 24px; font-weight: bold;">${finalStats.blueCasualties || 0}</div>
+            <div style="color: #8b949e; font-size: 12px;">蓝军伤亡</div>
+          </div>
+          <div>
+            <div style="color: #ff6b6b; font-size: 18px;">${Math.round(finalStats.redDamage || 0)}</div>
+            <div style="color: #8b949e; font-size: 12px;">红军输出</div>
+          </div>
+          <div>
+            <div style="color: #4dabf7; font-size: 18px;">${Math.round(finalStats.blueDamage || 0)}</div>
+            <div style="color: #8b949e; font-size: 12px;">蓝军输出</div>
+          </div>
+        </div>
+        <button id="replayResultCloseBtn" style="background: ${winner === 'red' ? '#ff4444' : winner === 'blue' ? '#4488ff' : '#666'};
+                color: white; border: none; padding: 10px 30px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+          确定
+        </button>
+      </div>
+      <div id="replayResultOverlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999;"></div>
+    `;
+
+    const div = document.createElement('div');
+    div.id = 'replayResultModal';
+    div.innerHTML = resultHtml;
+    document.body.appendChild(div);
+
+    // 绑定关闭按钮事件
+    document.getElementById('replayResultCloseBtn')?.addEventListener('click', () => {
+      // 清空场景
+      this.clearSceneAfterReplay();
+      // 移除弹窗
+      document.getElementById('replayResultModal')?.remove();
+    });
+
+    // 点击背景也关闭并清理
+    div.querySelector('div[style*="background: rgba(0,0,0,0.5)"]')?.addEventListener('click', function() {
+      this.parentElement?.querySelector('#replayResultCloseBtn')?.click();
+    });
   }
 
   updateReplayFrame() {
     if (!this.replay) return;
     const frame = this.replay[this.replayIndex];
+    if (!frame) return;
 
-    document.getElementById('replaySlider').value = this.replayIndex;
-    document.getElementById('replayTime').textContent =
-      `T=${Math.round(frame.time)}s (${this.replayIndex}/${this.replay.length})`;
+    const slider = document.getElementById('replaySlider');
+    if (slider) slider.value = this.replayIndex;
 
+    const replayTime = document.getElementById('replayTime');
+    if (replayTime) {
+      replayTime.textContent =
+        `T=${Math.round(frame.time)}s (${this.replayIndex}/${this.replay.length})`;
+    }
+
+    // 更新实体显示
     this.map2d.updateEntities(frame.entities, true, false);
     this.view3d.updateEntities(frame.entities, true, false);
+
+    // 播放战斗事件（攻击动画）
+    if (frame.combatEvents && frame.combatEvents.length > 0) {
+      for (const event of frame.combatEvents) {
+        // 检查攻击者和目标是否都存在（避免显示错误效果）
+        const attackerId = event.attacker || event.killer;
+        const targetId = event.target || event.victim;
+        const attacker = frame.entities.find(e => e.id === attackerId);
+        const target = frame.entities.find(e => e.id === targetId);
+
+        // 只有攻击者和目标都存在时才显示攻击动画
+        if (attacker && target && target.hp > 0) {
+          if (this.attackAnimations) {
+            this.attackAnimations.handleCombatEvent(event, frame.entities);
+          }
+        }
+      }
+    }
   }
 
   send(data) {
@@ -395,7 +688,7 @@ class SimCombatApp {
     container.innerHTML = `
       <div class="entity-info" style="font-size: 12px;">
         <div class="entity-header ${entity.side}" style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(233,69,96,0.2); border-radius:4px; margin-bottom:10px; border:1px solid ${entity.side === 'red' ? '#ff6b6b' : '#4dabf7'};">
-          <span style="font-weight:bold;">${entity.id}</span>
+          <span style="font-weight:bold;">${entity.name || entity.id}</span>
           <span style="opacity:0.8;">${entity.equipmentType}</span>
         </div>
 
@@ -673,12 +966,26 @@ class SimCombatApp {
     const sideClass = event.attackerSide === 'red' ? 'red' : 'blue';
     const hitStatus = event.hit ? `命中! 伤害${event.damage}` : '未命中';
 
-    // 处理未定义的名称
-    const attackerName = event.attackerName || event.attacker?.split('_')[0] || '未知单位';
-    const targetName = event.targetName || event.target?.split('_')[0] || '目标';
+    // 处理未定义的名称 - 增强容错
     const attackerId = event.attacker || '?';
     const targetId = event.target || '?';
     const distance = event.distance || '?';
+
+    // 名称处理：优先使用name字段，否则尝试从id提取，最后使用默认值
+    let attackerName = event.attackerName;
+    if (!attackerName && attackerId !== '?') {
+      // 尝试从id提取名称（格式通常是 e时间戳_随机数）
+      const idParts = attackerId.split('_');
+      attackerName = idParts[0] || '未知单位';
+    }
+    attackerName = attackerName || '未知单位';
+
+    let targetName = event.targetName;
+    if (!targetName && targetId !== '?') {
+      const idParts = targetId.split('_');
+      targetName = idParts[0] || '目标';
+    }
+    targetName = targetName || '目标';
 
     const msg = `[步${event.step}] ${sideColor}方${attackerName}(${attackerId}) → ${targetName}(${targetId}), 距离${distance}m, ${hitStatus}`;
     this.addLog(msg, 'combat');
@@ -690,24 +997,210 @@ class SimCombatApp {
     el.textContent = { connected: '已连接', connecting: '连接中...', disconnected: '未连接' }[status];
   }
 
+  // ========== AI智能配置 ==========
+  initAIConfig() {
+    const smartAIEnable = document.getElementById('enableSmartAI');
+    const tacticalStyle = document.getElementById('tacticalStyle');
+    const aiAggression = document.getElementById('aiAggression');
+    const aiAggressionValue = document.getElementById('aiAggressionValue');
+    const formationEnable = document.getElementById('enableFormation');
+    const aiHintText = document.getElementById('aiHintText');
+    const smartAIStatus = document.getElementById('smartAIStatus');
+
+    if (!smartAIEnable) return;
+
+    // SmartAI 开关
+    smartAIEnable?.addEventListener('change', (e) => {
+      const enabled = e.target.checked;
+      this.send({ cmd: 'setSmartAI', enabled });
+
+      if (smartAIStatus) {
+        smartAIStatus.textContent = enabled ? '已启用' : '已禁用';
+        smartAIStatus.style.color = enabled ? '#58a6ff' : '#6e7681';
+      }
+      if (aiHintText) {
+        aiHintText.innerHTML = enabled
+          ? '💡 智能AI启用：单位将自动选择最佳目标、利用地形、协同攻击'
+          : '💡 传统行为树AI：单位按预设规则行动，攻击最近的敌人';
+      }
+    });
+
+    // 战术风格切换
+    tacticalStyle?.addEventListener('change', (e) => {
+      const style = e.target.value;
+      let aggression = 50;
+      let formationEnabled = true;
+
+      switch (style) {
+        case 'aggressive':
+          aggression = 75;
+          if (aiHintText) aiHintText.innerHTML = '⚔️ 激进进攻：优先消灭敌人、主动追击、较少撤退';
+          break;
+        case 'defensive':
+          aggression = 25;
+          if (aiHintText) aiHintText.innerHTML = '🛡️ 保守防御：优先保全单位、依赖掩体、有序撤退';
+          break;
+        default: // balanced
+          aggression = 50;
+          if (aiHintText) aiHintText.innerHTML = '⚖️ 平衡战术：攻守兼备、灵活机动、协同作战';
+      }
+
+      if (aiAggression) aiAggression.value = aggression;
+      if (aiAggressionValue) aiAggressionValue.textContent = aggression + '%';
+      if (formationEnable) formationEnable.checked = formationEnabled;
+
+      this.send({ cmd: 'setAITacticalStyle', style, aggression, formationEnabled });
+    });
+
+    // AI激进程度滑块
+    aiAggression?.addEventListener('input', (e) => {
+      const value = parseInt(e.target.value);
+      if (aiAggressionValue) aiAggressionValue.textContent = value + '%';
+
+      this.send({ cmd: 'setAIAggression', aggression: value });
+    });
+
+    // 编队协同开关
+    formationEnable?.addEventListener('change', (e) => {
+      const enabled = e.target.checked;
+      this.send({ cmd: 'setAIFormation', enabled });
+
+      if (enabled && aiHintText) {
+        aiHintText.innerHTML += ' | 编队协同已启用';
+      }
+    });
+  }
+
+  // ========== 回放管理 ==========
+  initReplayManager() {
+    // 保存当前推演为回放（自动生成名称）
+    document.getElementById('btnSaveReplay')?.addEventListener('click', () => {
+      // 自动生成名称：推演_年月日_时分
+      const now = new Date();
+      const name = `推演_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
+      this.send({ cmd: 'saveReplay', name });
+      this.addLog(`正在保存回放: ${name}`, 'info');
+    });
+
+    // 加载选定的回放
+    document.getElementById('btnLoadReplay')?.addEventListener('click', () => {
+      const select = document.getElementById('savedReplays');
+      const name = select?.value;
+      if (name) {
+        this.send({ cmd: 'loadReplay', name });
+        this.addLog(`正在加载并播放回放: ${name}`, 'info');
+      } else {
+        this.addLog('请先选择要加载的回放', 'warning');
+      }
+    });
+
+    // 下拉框变化时更新回放信息
+    document.getElementById('savedReplays')?.addEventListener('change', (e) => {
+      this.updateReplayInfo(e.target.value);
+    });
+
+    // 页面加载时刷新回放列表
+    this.refreshReplayList();
+
+    // 应用默认地图设置（根据HTML中的默认状态）
+    this.applyDefaultMapSettings();
+  }
+
+  /**
+   * 应用默认地图设置
+   */
+  applyDefaultMapSettings() {
+    // 获取默认底图类型
+    const baseMapSelect = document.getElementById('baseMapType');
+    if (baseMapSelect && baseMapSelect.value) {
+      console.log(`[初始化] 应用默认底图: ${baseMapSelect.value}`);
+      this.map2d.switchBaseLayer(baseMapSelect.value);
+    }
+
+    // 获取离线模式开关状态
+    const offlineModeCheckbox = document.getElementById('offlineMode');
+    if (offlineModeCheckbox && offlineModeCheckbox.checked) {
+      console.log('[初始化] 应用默认离线模式');
+      this.map2d.setOfflineMode(true);
+    }
+  }
+
+  refreshReplayList() {
+    this.send({ cmd: 'listReplays' });
+  }
+
+  updateReplayList(replays) {
+    const select = document.getElementById('savedReplays');
+    if (!select) return;
+
+    // 保存当前选择
+    const currentSelection = select.value;
+
+    // 清空现有选项（保留第一个"-- 选择 --"）
+    while (select.options.length > 1) {
+      select.remove(1);
+    }
+
+    // 添加回放选项
+    replays.forEach(replay => {
+      const option = document.createElement('option');
+      option.value = replay.name;
+      // 缩短显示文本
+      const shortName = replay.name.length > 15 ? replay.name.substring(0, 15) + '...' : replay.name;
+      const winnerText = replay.winner ?
+        (replay.winner === 'red' ? '🔴' : replay.winner === 'blue' ? '🔵' : '⚪') : '';
+      option.textContent = `${shortName} ${winnerText}`;
+      option.title = `${replay.name} (${replay.frameCount}帧)`; // 悬停提示
+      select.appendChild(option);
+    });
+
+    // 恢复之前的选择
+    if (currentSelection) {
+      select.value = currentSelection;
+    }
+
+    console.log(`刷新回放列表: ${replays.length} 个回放`);
+  }
+
+  updateReplayInfo(name) {
+    const infoDiv = document.getElementById('replayInfo');
+    if (!infoDiv) return;
+
+    if (!name) {
+      infoDiv.style.display = 'none';
+      return;
+    }
+
+    // 这里可以显示更详细的回放信息
+    infoDiv.style.display = 'block';
+    infoDiv.textContent = `已选择: ${name}`;
+  }
+
   // ========== 想定编辑器功能 ==========
   initScenarioEditor() {
     this.editorMode = 'view'; // view, addRed, addBlue, remove
-    this.selectedUnitType = 'tank';
-    this.simMode = 'exercise'; // 'exercise' 或 'combat'
-    this.exerciseAreaSet = false;
+    // 从HTML元素读取默认单位类型
+    const unitTypeSelect = document.getElementById('unitType');
+    this.selectedUnitType = unitTypeSelect?.value || 'infantry'; // 默认与HTML第一个选项一致
+    // 从DOM元素读取当前选择的模式，不要硬编码覆盖
+    const simModeSelect = document.getElementById('simMode');
+    this.simMode = simModeSelect?.value || 'exercise';
+    this.exerciseAreaSet = this.simMode === 'combat'; // 实战模式默认已设置区域
 
     const modeSelect = document.getElementById('editorMode');
     const unitSelector = document.getElementById('unitSelector');
-    const unitTypeSelect = document.getElementById('unitType');
+    // 注意：unitTypeSelect 和 simModeSelect 已在上方声明
     const hint = document.getElementById('editorHint');
-    const simModeSelect = document.getElementById('simMode');
     const modeHint = document.getElementById('modeHint');
 
     // 推演模式切换
     if (simModeSelect) {
       simModeSelect.addEventListener('change', (e) => {
         this.simMode = e.target.value;
+        // 先清除所有攻击动画
+        if (this.attackAnimations) {
+          this.attackAnimations.clearAll();
+        }
         if (this.simMode === 'exercise') {
           modeHint.innerHTML = '💡 演习模式：请先划定演习区域，配置兵力后再开始推演';
           modeHint.style.borderLeftColor = '#f0883e';
@@ -722,81 +1215,96 @@ class SimCombatApp {
           this.send({ cmd: 'reset' });
           this.exerciseAreaSet = true;
           this.map2d.setExerciseArea([[39.4, 115.9], [40.4, 116.9]]);
+          // 实战模式下加载预设想定
+          this.loadPresetScenario('skirmish');
+        }
+      });
+
+      // 初始化时根据当前模式设置状态
+      if (this.simMode === 'combat') {
+        modeHint.innerHTML = '💡 实战模式：可直接部署兵力，系统已加载预设对抗态势';
+        modeHint.style.borderLeftColor = '#238636';
+      }
+    }
+
+    // 模式切换
+    if (modeSelect) {
+      modeSelect.addEventListener('change', (e) => {
+        this.editorMode = e.target.value;
+        const isAddMode = this.editorMode === 'addRed' || this.editorMode === 'addBlue';
+        if (unitSelector) unitSelector.style.display = isAddMode ? 'block' : 'none';
+
+        // 清除之前的路径绘制状态
+        if (this.pathDrawing) {
+          this.cancelPathDrawing();
+        }
+
+        if (!hint) return;
+        if (this.editorMode === 'view') {
+          hint.textContent = '💡 仅查看模式，可以查看和选择单位';
+          this.map2d.map.getContainer().style.cursor = '';
+        } else if (this.editorMode.startsWith('add')) {
+          hint.textContent = '💡 点击地图放置单位';
+          this.map2d.map.getContainer().style.cursor = 'crosshair';
+        } else if (this.editorMode === 'remove') {
+          hint.textContent = '💡 点击单位删除';
+          this.map2d.map.getContainer().style.cursor = 'not-allowed';
+        } else if (this.editorMode === 'move') {
+          hint.textContent = '💡 点击选择要移动的单位，然后点击新位置放置';
+          this.map2d.map.getContainer().style.cursor = 'move';
+        } else if (this.editorMode === 'setPath') {
+          hint.textContent = '💡 点击单位开始设置路径，然后在地图上点击添加路径点，双击结束';
+          this.map2d.map.getContainer().style.cursor = 'crosshair';
         }
       });
     }
 
-    // 模式切换
-    modeSelect.addEventListener('change', (e) => {
-      this.editorMode = e.target.value;
-      const isAddMode = this.editorMode === 'addRed' || this.editorMode === 'addBlue';
-      unitSelector.style.display = isAddMode ? 'block' : 'none';
-
-      // 清除之前的路径绘制状态
-      if (this.pathDrawing) {
-        this.cancelPathDrawing();
-      }
-
-      if (this.editorMode === 'view') {
-        hint.textContent = '💡 仅查看模式，可以查看和选择单位';
-        this.map2d.map.getContainer().style.cursor = '';
-      } else if (this.editorMode.startsWith('add')) {
-        hint.textContent = '💡 点击地图放置单位';
-        this.map2d.map.getContainer().style.cursor = 'crosshair';
-      } else if (this.editorMode === 'remove') {
-        hint.textContent = '💡 点击单位删除';
-        this.map2d.map.getContainer().style.cursor = 'not-allowed';
-      } else if (this.editorMode === 'move') {
-        hint.textContent = '💡 点击选择要移动的单位，然后点击新位置放置';
-        this.map2d.map.getContainer().style.cursor = 'move';
-      } else if (this.editorMode === 'setPath') {
-        hint.textContent = '💡 点击单位开始设置路径，然后在地图上点击添加路径点，双击结束';
-        this.map2d.map.getContainer().style.cursor = 'crosshair';
-      }
-    });
-
     // 单位类型选择
-    unitTypeSelect.addEventListener('change', (e) => {
-      this.selectedUnitType = e.target.value;
-    });
+    if (unitTypeSelect) {
+      unitTypeSelect.addEventListener('change', (e) => {
+        this.selectedUnitType = e.target.value;
+      });
+    }
 
     // 地图点击事件 - 添加/删除单位/设置路径
-    this.map2d.onMapClick = (e) => {
-      if (this.editorMode === 'view') return;
+    if (this.map2d) {
+      this.map2d.onMapClick = (e) => {
+        if (this.editorMode === 'view') return;
 
-      if (this.editorMode === 'remove') {
-        // 删除模式：查找最近的单位并删除
-        this.removeNearestEntity(e.latlng);
-        return;
-      }
+        if (this.editorMode === 'remove') {
+          // 删除模式：查找最近的单位并删除
+          this.removeNearestEntity(e.latlng);
+          return;
+        }
 
-      if (this.editorMode === 'move') {
-        // 移动模式
-        this.handleMoveEntity(e);
-        return;
-      }
+        if (this.editorMode === 'move') {
+          // 移动模式
+          this.handleMoveEntity(e);
+          return;
+        }
 
-      if (this.editorMode === 'setPath') {
-        // 设置路径模式
-        this.handlePathDrawing(e);
-        return;
-      }
+        if (this.editorMode === 'setPath') {
+          // 设置路径模式
+          this.handlePathDrawing(e);
+          return;
+        }
 
-      if (this.editorMode.startsWith('add')) {
-        // 添加模式
-        const side = this.editorMode === 'addRed' ? 'red' : 'blue';
-        this.addEntityAt(side, this.selectedUnitType, e.latlng);
-      }
-    };
+        if (this.editorMode.startsWith('add')) {
+          // 添加模式
+          const side = this.editorMode === 'addRed' ? 'red' : 'blue';
+          this.addEntityAt(side, this.selectedUnitType, e.latlng);
+        }
+      };
+    }
 
     // 按钮事件
-    document.getElementById('btnClearAll').addEventListener('click', () => {
+    document.getElementById('btnClearAll')?.addEventListener('click', () => {
       if (confirm('确定要清空所有单位吗？')) {
         this.clearAllEntities();
       }
     });
 
-    document.getElementById('btnSaveScenario').addEventListener('click', () => {
+    document.getElementById('btnSaveScenario')?.addEventListener('click', () => {
       this.saveScenario();
     });
 
@@ -804,9 +1312,8 @@ class SimCombatApp {
       this.exportLogs();
     });
 
-    // 预设想定加载
-    document.getElementById('btnLoadPreset').addEventListener('click', () => {
-      const preset = document.getElementById('presetScenario').value;
+    document.getElementById('btnLoadPreset')?.addEventListener('click', () => {
+      const preset = document.getElementById('presetScenario')?.value;
       if (preset) {
         this.loadPresetScenario(preset);
       } else {
@@ -819,79 +1326,92 @@ class SimCombatApp {
   loadPresetScenario(presetType) {
     const presets = {
       skirmish: {
-        name: '遭遇战',
+        name: '遭遇战（近距离）',
         entities: [
-          { side: 'red', equipmentType: 'tank', x: 2000, y: 2000, aiType: 'combat' },
-          { side: 'red', equipmentType: 'infantry', x: 2200, y: 2100, aiType: 'combat' },
-          { side: 'blue', equipmentType: 'tank', x: 6000, y: 6000, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'infantry', x: 5800, y: 5900, aiType: 'defensive' }
+          // 红方 - 西北侧，距离蓝方约600米
+          { side: 'red', equipmentType: 'tank', x: 4500, y: 4500, aiType: 'combat' },
+          { side: 'red', equipmentType: 'infantry', x: 4300, y: 4400, aiType: 'combat' },
+          // 蓝方 - 东南侧
+          { side: 'blue', equipmentType: 'tank', x: 5100, y: 5100, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'infantry', x: 4900, y: 5000, aiType: 'defensive' }
         ]
       },
       assault: {
-        name: '进攻作战',
+        name: '进攻作战（中距离）',
         entities: [
-          { side: 'red', equipmentType: 'tank', x: 1500, y: 1500, aiType: 'combat' },
-          { side: 'red', equipmentType: 'tank', x: 1800, y: 1600, aiType: 'combat' },
-          { side: 'red', equipmentType: 'apc', x: 1600, y: 1700, aiType: 'combat' },
-          { side: 'red', equipmentType: 'infantry', x: 1700, y: 1800, aiType: 'combat' },
-          { side: 'red', equipmentType: 'artillery', x: 1000, y: 1000, aiType: 'artillery' },
-          { side: 'blue', equipmentType: 'tank', x: 6500, y: 6500, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'tank', x: 6200, y: 6400, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'infantry', x: 6300, y: 6300, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'air_defense', x: 6400, y: 6200, aiType: 'defensive' }
+          // 红方进攻集群 - 西侧，距离约1000米
+          { side: 'red', equipmentType: 'tank', x: 4200, y: 4800, aiType: 'combat' },
+          { side: 'red', equipmentType: 'tank', x: 4400, y: 4600, aiType: 'combat' },
+          { side: 'red', equipmentType: 'apc', x: 4300, y: 4700, aiType: 'combat' },
+          { side: 'red', equipmentType: 'infantry', x: 4100, y: 4900, aiType: 'combat' },
+          { side: 'red', equipmentType: 'artillery', x: 3500, y: 4500, aiType: 'artillery' },
+          // 蓝方防御阵地 - 东侧
+          { side: 'blue', equipmentType: 'tank', x: 5200, y: 5200, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'tank', x: 5400, y: 5000, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'infantry', x: 5100, y: 5100, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'air_defense', x: 5300, y: 4900, aiType: 'defensive' }
         ]
       },
       combined: {
-        name: '联合作战',
+        name: '联合作战（多兵种）',
         entities: [
-          { side: 'red', equipmentType: 'tank', x: 2000, y: 2000, aiType: 'combat' },
-          { side: 'red', equipmentType: 'tank', x: 2200, y: 2100, aiType: 'combat' },
-          { side: 'red', equipmentType: 'apc', x: 2100, y: 1900, aiType: 'combat' },
-          { side: 'red', equipmentType: 'infantry', x: 2300, y: 2000, aiType: 'combat' },
-          { side: 'red', equipmentType: 'fighter', x: 2500, y: 2500, z: 5000, aiType: 'combat' },
-          { side: 'red', equipmentType: 'artillery', x: 1500, y: 1500, aiType: 'artillery' },
-          { side: 'blue', equipmentType: 'tank', x: 6000, y: 6000, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'tank', x: 5800, y: 5900, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'apc', x: 5900, y: 6100, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'infantry', x: 5700, y: 5800, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'fighter', x: 5500, y: 5500, z: 5000, aiType: 'combat' },
-          { side: 'blue', equipmentType: 'air_defense', x: 6200, y: 6200, aiType: 'defensive' }
+          // 红方合成集群
+          { side: 'red', equipmentType: 'tank', x: 4000, y: 4800, aiType: 'combat' },
+          { side: 'red', equipmentType: 'tank', x: 4200, y: 4600, aiType: 'combat' },
+          { side: 'red', equipmentType: 'apc', x: 4100, y: 4700, aiType: 'combat' },
+          { side: 'red', equipmentType: 'infantry', x: 3900, y: 4900, aiType: 'combat' },
+          { side: 'red', equipmentType: 'artillery', x: 3500, y: 4500, aiType: 'artillery' },
+          // 蓝方防御体系
+          { side: 'blue', equipmentType: 'tank', x: 5200, y: 5200, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'tank', x: 5400, y: 5000, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'apc', x: 5300, y: 5100, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'infantry', x: 5500, y: 4900, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'air_defense', x: 5600, y: 4800, aiType: 'defensive' }
         ]
       },
-      naval: {
-        name: '海空对抗',
+      urban: {
+        name: '城市巷战（近距离）',
         entities: [
-          { side: 'red', equipmentType: 'destroyer', x: 2000, y: 5000, aiType: 'combat' },
-          { side: 'red', equipmentType: 'submarine', x: 2500, y: 5500, aiType: 'combat' },
-          { side: 'red', equipmentType: 'fighter', x: 3000, y: 4000, z: 5000, aiType: 'combat' },
-          { side: 'blue', equipmentType: 'carrier', x: 7000, y: 5000, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'destroyer', x: 6500, y: 4500, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'fighter', x: 6000, y: 4000, z: 5000, aiType: 'combat' }
+          // 红方突击队
+          { side: 'red', equipmentType: 'infantry', x: 4800, y: 4800, aiType: 'combat' },
+          { side: 'red', equipmentType: 'infantry', x: 4700, y: 4900, aiType: 'combat' },
+          { side: 'red', equipmentType: 'apc', x: 4600, y: 5000, aiType: 'combat' },
+          { side: 'red', equipmentType: 'tank', x: 4500, y: 5100, aiType: 'combat' },
+          // 蓝方防守方 - 距离约400-600米
+          { side: 'blue', equipmentType: 'infantry', x: 5200, y: 5200, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'infantry', x: 5300, y: 5100, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'tank', x: 5400, y: 5000, aiType: 'defensive' }
         ]
       },
       asymmetric: {
-        name: '非对称作战',
+        name: '非对称作战（游击战）',
         entities: [
-          { side: 'red', equipmentType: 'tank', x: 5000, y: 5000, aiType: 'combat' },
-          { side: 'red', equipmentType: 'tank', x: 5200, y: 5100, aiType: 'combat' },
-          { side: 'red', equipmentType: 'apc', x: 5100, y: 4900, aiType: 'combat' },
-          { side: 'blue', equipmentType: 'infantry', x: 8000, y: 8000, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'infantry', x: 8200, y: 7900, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'uav', x: 7500, y: 7500, z: 300, aiType: 'scout' },
-          { side: 'blue', equipmentType: 'artillery', x: 7800, y: 7800, aiType: 'artillery' }
+          // 红方重装部队
+          { side: 'red', equipmentType: 'tank', x: 4500, y: 4800, aiType: 'combat' },
+          { side: 'red', equipmentType: 'tank', x: 4700, y: 4600, aiType: 'combat' },
+          { side: 'red', equipmentType: 'apc', x: 4600, y: 4700, aiType: 'combat' },
+          // 蓝方轻装分散
+          { side: 'blue', equipmentType: 'infantry', x: 5200, y: 5200, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'infantry', x: 5400, y: 5000, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'uav', x: 5500, y: 4800, z: 300, aiType: 'scout' },
+          { side: 'blue', equipmentType: 'artillery', x: 5600, y: 4700, aiType: 'artillery' }
         ]
       },
-      air_superiority: {
-        name: '制空权争夺',
+      firepower: {
+        name: '火力打击（炮兵支援）',
         entities: [
-          { side: 'red', equipmentType: 'fighter', x: 2000, y: 5000, z: 6000, aiType: 'combat' },
-          { side: 'red', equipmentType: 'fighter', x: 2500, y: 5500, z: 6000, aiType: 'combat' },
-          { side: 'red', equipmentType: 'bomber', x: 1500, y: 4500, z: 8000, aiType: 'combat' },
-          { side: 'red', equipmentType: 'air_defense', x: 2000, y: 4000, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'fighter', x: 7000, y: 5000, z: 6000, aiType: 'combat' },
-          { side: 'blue', equipmentType: 'fighter', x: 6500, y: 5500, z: 6000, aiType: 'combat' },
-          { side: 'blue', equipmentType: 'air_defense', x: 7500, y: 4500, aiType: 'defensive' },
-          { side: 'blue', equipmentType: 'radar', x: 7200, y: 4800, aiType: 'defensive' }
+          // 红方突击部队
+          { side: 'red', equipmentType: 'tank', x: 4000, y: 4800, aiType: 'combat' },
+          { side: 'red', equipmentType: 'tank', x: 4200, y: 4700, aiType: 'combat' },
+          { side: 'red', equipmentType: 'infantry', x: 4100, y: 4900, aiType: 'combat' },
+          // 红方远程炮兵（后方）
+          { side: 'red', equipmentType: 'artillery', x: 3200, y: 4400, aiType: 'artillery' },
+          { side: 'red', equipmentType: 'artillery', x: 3300, y: 4300, aiType: 'artillery' },
+          // 蓝方防御阵地
+          { side: 'blue', equipmentType: 'tank', x: 5500, y: 5200, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'tank', x: 5700, y: 5100, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'infantry', x: 5600, y: 5300, aiType: 'defensive' },
+          { side: 'blue', equipmentType: 'air_defense', x: 5800, y: 5000, aiType: 'defensive' }
         ]
       }
     };
@@ -964,6 +1484,46 @@ class SimCombatApp {
       this.send({ cmd: 'removeEntity', entityId: entity.id });
     }
     this.addLog('已清空所有单位', 'info');
+  }
+
+  /**
+   * 回放结束后清空场景
+   */
+  clearSceneAfterReplay() {
+    // 停止回放
+    this.stopReplay();
+
+    // 清除攻击动画
+    if (this.attackAnimations) {
+      this.attackAnimations.clearAll();
+    }
+
+    // 清空地图上的实体
+    this.map2d.clear();
+
+    // 清空状态
+    this.state = null;
+    this.replay = null;
+    this.replayInitialScene = null;
+    this.replayFinalResult = null;
+
+    // 关闭回放控制条
+    const replayBar = document.getElementById('replayBar');
+    if (replayBar) replayBar.style.display = 'none';
+
+    // 重置UI
+    document.getElementById('simTime').textContent = '0s';
+    document.getElementById('entityCount').textContent = '0';
+    document.getElementById('redUnits').textContent = '0';
+    document.getElementById('blueUnits').textContent = '0';
+    if (this.statsPanel) {
+      this.statsPanel.reset();
+    }
+
+    // 通知服务器清空实体（避免影响下次推演）
+    this.send({ cmd: 'clearAllEntities' });
+
+    this.addLog('回放结束，场景已清空', 'info');
   }
 
   // 保存想定
@@ -1132,7 +1692,7 @@ class SimCombatApp {
     const btn = document.getElementById('btnSetArea');
     if (btn) {
       btn.classList.remove('active');
-      btn.textContent = '📍 划定演习区域';
+      btn.textContent = '📍 划定区域';
     }
 
     this.map2d.map.getContainer().style.cursor = '';

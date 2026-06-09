@@ -5,6 +5,7 @@
 const TerrainManager = require('./TerrainManager');
 const { BehaviorTree, Selector, Sequence, AttackTarget, FindNearestEnemy, Retreat, CheckHealth, MoveTo, Patrol, Condition } = require('./ai/BehaviorTree');
 const { TacticalAI } = require('./ai/TacticalAI');
+const SmartTacticalAI = require('./ai/SmartTacticalAI');
 const CombatSystem = require('./systems/CombatSystem');
 const PerceptionSystem = require('./systems/PerceptionSystem');
 const MovementSystem = require('./systems/MovementSystem');
@@ -25,6 +26,9 @@ class Simulation {
     this.perception = new PerceptionSystem(this.terrain);
     this.movement = new MovementSystem(this.terrain);
     this.tacticalAI = new TacticalAI(this.terrain);
+    this.smartAI = new SmartTacticalAI(this.terrain, this.movement);
+    this.useSmartAI = config.useSmartAI !== false;
+    this.aiStyle = 'balanced'; // aggressive, balanced, defensive
 
     // 实体管理
     this.entities = [];
@@ -281,24 +285,53 @@ class Simulation {
     // 清空上一帧的战斗事件
     this.blackboard.combatEvents = [];
 
-    // 1. 感知更新 - 所有单位探测敌情
+    // 2. 感知更新 - 所有单位探测敌情
     this.perception.updatePerception(this.entities);
 
-    // 2. AI行为决策
-    for (const entity of this.entities) {
-      if (entity.hp <= 0) continue;
+    // 3. AI行为决策 - 使用SmartTacticalAI或原有行为树
+    if (this.useSmartAI) {
+      const aiResults = this.smartAI.updateAll(this.entities, this.dt);
+      // 将AI结果转换为战斗事件
+      for (const result of aiResults) {
+        if (result.action === 'fire' && result.hit) {
+          const target = this.entities.find(e => e.id === result.target);
+          const attacker = this.entities.find(e => e.id === result.entityId);
+          if (target && attacker) {
+            this.updateDamageStats(attacker.side, result.damage);
+            this.blackboard.combatEvents.push({
+              step: this.stepCount,
+              time: this.time,
+              attacker: attacker.id,
+              attackerName: attacker.name,
+              attackerSide: attacker.side,
+              target: target.id,
+              targetName: target.name,
+              damage: Math.round(result.damage),
+              hit: result.hit,
+              distance: Math.round(result.distance)
+            });
 
-      const behavior = this.entityBehaviors.get(entity.id);
-      if (behavior) {
-        behavior.tick(entity, this.dt);
+            if (target.hp <= 0) {
+              this.recordKill(attacker, target);
+            }
+          }
+        }
       }
+    } else {
+      // 使用原有行为树
+      for (const entity of this.entities) {
+        if (entity.hp <= 0) continue;
+        const behavior = this.entityBehaviors.get(entity.id);
+        if (behavior) {
+          behavior.tick(entity, this.dt);
+        }
+      }
+      // 原有自动交战处理
+      this.processAutoEngagement();
     }
 
-    // 3. 运动更新
+    // 4. 运动更新
     this.movement.updateMovement(this.entities, this.dt);
-
-    // 4. 自动目标识别与攻击
-    this.processAutoEngagement();
 
     // 5. 更新统计
     this.updateStats();
@@ -346,7 +379,7 @@ class Simulation {
     }
   }
 
-  // 寻找最佳目标（射程内、优先级高）
+  // 寻找最佳目标 - 使用智能评分算法
   findBestTarget(entity) {
     const enemies = entity.detectedContacts || [];
     let bestTarget = null;
@@ -361,10 +394,59 @@ class Simulation {
       // 超出射程
       if (dist > entity.range) continue;
 
-      // 评分：距离近的优先，高威胁的优先（按火力/血量）
-      const threatLevel = (target.damage || 0) / (target.hp || 1);
-      const distanceScore = 1 - (dist / entity.range);
-      const score = distanceScore * 10 + threatLevel * 5;
+      // 检查视线
+      if (this.terrain && !this.terrain.hasLineOfSight(
+        entity.x, entity.y, target.x, target.y,
+        entity.height || 2, target.height || 2
+      )) continue;
+
+      // ====== 智能目标评分算法 ======
+      // 基础分数
+      let score = 0;
+
+      // 1. 距离评分：越近越好，超过2/3射程开始衰减
+      const rangeRatio = dist / entity.range;
+      score += (1 - rangeRatio) * 15; // 最大15分
+
+      // 2. 威胁度评分：高火力低血量 = 高威胁，优先消灭
+      const threatLevel = (target.damage || 0) * (target.fireRate || 1) / Math.max(1, target.hp);
+      score += Math.min(threatLevel * 10, 25); // 最大25分
+
+      // 3. 易击杀评分：血量越低越优先
+      const killBonus = 1 - (target.hp / Math.max(1, target.maxHp));
+      score += killBonus * 20; // 最大20分
+
+      // 4. 目标类型优先级
+      const typePriority = {
+        'artillery': 15,   // 火炮优先
+        'air_defense': 15, // 防空优先
+        'tank': 10,        // 坦克重要目标
+        'apc': 5,          // 装甲车
+        'infantry': 3,     // 步兵
+        'fighter': 12,     // 战斗机
+        'helicopter': 8    // 直升机
+      };
+      score += typePriority[target.type] || 0;
+
+      // 5. 协同加成：有其他友军攻击同一目标时加分
+      const alliesAttackingSame = this.entities.filter(e =>
+        e.side === entity.side &&
+        e.hp > 0 &&
+        e.attackTarget?.id === target.id
+      ).length;
+      score += alliesAttackingSame * 5; // 每个友军+5分
+
+      // 6. 角度优势：正面攻击坦克减分，侧翼攻击加分
+      const targetHeading = (target.heading || 0) * Math.PI / 180;
+      const relativeAngle = Math.atan2(entity.y - target.y, entity.x - target.x);
+      const frontAngle = Math.abs(relativeAngle - targetHeading);
+      const isFront = frontAngle < Math.PI / 4 || frontAngle > 3 * Math.PI / 4;
+      if (target.type === 'tank' && !isFront) {
+        score += 10; // 侧翼攻击坦克加分
+      }
+
+      // 7. 随机因素（模拟战场不确定性）
+      score += Math.random() * 2;
 
       if (score > bestScore) {
         bestScore = score;
@@ -382,6 +464,10 @@ class Simulation {
     } else {
       this.stats.redCasualties++;
     }
+
+    // 标记受害者为已摧毁状态
+    victim.status = 'destroyed';
+    victim.hp = 0;
 
     this.blackboard.combatEvents.push({
       step: this.stepCount,
@@ -450,6 +536,10 @@ class Simulation {
       this.stats.endTime = Date.now();
       this.stats.winner = winner;
       this.stats.endReason = reason;
+      // 在停止前再记录一帧，确保包含获胜信息
+      if (this.replayEnabled) {
+        this.recordFrame();
+      }
       this.stop();
     }
   }
@@ -459,6 +549,7 @@ class Simulation {
       time: this.time,
       entities: this.entities.map(e => ({
         id: e.id,
+        name: e.name,           // 保存名字
         side: e.side,
         type: e.equipmentType,
         x: e.x,
@@ -470,6 +561,7 @@ class Simulation {
         status: e.status,
         detectedContacts: e.detectedContacts?.map(c => c.id)
       })),
+      combatEvents: this.blackboard.combatEvents || [],  // 保存战斗事件
       stats: { ...this.stats }
     };
 
@@ -535,7 +627,11 @@ class Simulation {
       terrain: this.terrain ? {
         width: this.terrain.width,
         height: this.terrain.height,
-        resolution: this.terrain.resolution
+        resolution: this.terrain.resolution,
+        cols: this.terrain.cols,
+        rows: this.terrain.rows,
+        // 只发送地形类型数据（高程数据可以单独请求）
+        terrainType: Array.from(this.terrain.terrainType)
       } : null
     };
   }
@@ -600,6 +696,29 @@ class Simulation {
     entity.deployed = true;
 
     return true;
+  }
+
+  // 设置AI战术风格
+  setAITacticalStyle(style, aggression, formationEnabled) {
+    this.aiStyle = style;
+    if (this.smartAI) {
+      this.smartAI.setTacticalStyle(style, aggression / 100, formationEnabled);
+    }
+  }
+
+  // 启用/禁用强化学习
+  setLearningEnabled(enabled) {
+    if (this.smartAI) {
+      this.smartAI.setLearningEnabled(enabled);
+    }
+  }
+
+  // 获取学习状态报告
+  getLearningReport() {
+    if (this.smartAI) {
+      return this.smartAI.getLearningReport();
+    }
+    return null;
   }
 
   // 获取实体详细信息（包含武器属性）

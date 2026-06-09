@@ -205,6 +205,11 @@ body {
   color: #c9d1d9;
   border-radius: 4px;
   font-size: 11px;
+  max-width: 140px;         /* 限制最大宽度 */
+  min-width: 100px;         /* 最小宽度 */
+  overflow: hidden;         /* 隐藏溢出 */
+  text-overflow: ellipsis;  /* 显示省略号 */
+  white-space: nowrap;      /* 不换行 */
 }
 
 .stats-grid {
@@ -541,6 +546,23 @@ body {
 
 .entity-tooltip .leaflet-tooltip-top:before {
   border-top-color: rgba(22, 27, 34, 0.9);
+}
+
+/* 单位永久标签 */
+.unit-label {
+  background: rgba(22, 27, 34, 0.85);
+  border: 1px solid #484f58;
+  border-radius: 3px;
+  color: #fff;
+  padding: 2px 6px;
+  font-size: 10px;
+  font-weight: bold;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  white-space: nowrap;
+}
+
+.unit-label.leaflet-tooltip-top:before {
+  border-top-color: rgba(22, 27, 34, 0.85);
 }
 
 /* 射程、视野、雷达范围圆圈样式 */
@@ -896,4 +918,145 @@ body {
   to {
     stroke-dashoffset: -20;
   }
+}
+
+/* 提示图标样式 */
+.hint-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: #30363d;
+  color: #8b949e;
+  border-radius: 50%;
+  font-size: 10px;
+  margin-left: 6px;
+  cursor: help;
+  transition: all 0.2s;
+}
+
+.hint-icon:hover {
+  background: #58a6ff;
+  color: #fff;
+}
+
+/* 设置行提示 */
+.setting-row[title] {
+  cursor: help;
+}
+
+.setting-row[title]:hover {
+  background: rgba(88, 166, 255, 0.05);
+}
+
+/* Toggle Switch 开关样式 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  margin-left: 8px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #30363d;
+  transition: .3s;
+  border-radius: 24px;
+  border: 1px solid #484f58;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #c9d1d9;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #238636;
+  border-color: #238636;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+  background-color: #fff;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 2px #238636;
+}
+
+/* AI配置面板特殊样式 */
+.ai-config .setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #30363d;
+}
+
+.ai-config .setting-row:last-child {
+  border-bottom: none;
+}
+
+.ai-config label:first-child {
+  min-width: 80px;
+  font-size: 12px;
+}
+
+.ai-config select {
+  flex: 1;
+  padding: 4px 8px;
+  background: #21262d;
+  border: 1px solid #30363d;
+  border-radius: 4px;
+  color: #c9d1d9;
+  font-size: 12px;
+}
+
+.ai-config input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 80px;
+  height: 6px;
+  background: #30363d;
+  border-radius: 3px;
+  outline: none;
+}
+
+.ai-config input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: #58a6ff;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.ai-config input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: #58a6ff;
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
 }

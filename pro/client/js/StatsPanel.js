@@ -6,11 +6,12 @@ class StatsPanel {
     this.damageHistory = { red: [], blue: [] };
     this.maxHistory = 50;
     this.engagementCount = 0;
+    this.processedEvents = new Set(); // 记录已处理的战斗事件，避免重复计数
   }
 
   update(stats, combatEvents = [], isRunning = false, time = 0) {
     this.updateCasualtyStats(stats);
-    this.updateDamageStats(stats);
+    this.updateDamageStats(stats, isRunning, time);
     this.updateValueStats(stats);
     this.updateBattleStatus(stats, combatEvents, isRunning);
     this.checkConclusion(stats, isRunning, time);
@@ -28,20 +29,31 @@ class StatsPanel {
     document.getElementById('blueCasualtyBar').style.width = `${(blue / total) * 100}%`;
   }
 
-  updateDamageStats(stats) {
+  updateDamageStats(stats, isRunning = false, time = 0) {
     const redDamage = Math.round(stats.redDamage || 0);
     const blueDamage = Math.round(stats.blueDamage || 0);
 
     document.getElementById('redDamage').textContent = redDamage;
     document.getElementById('blueDamage').textContent = blueDamage;
 
-    // 添加到历史
-    this.damageHistory.red.push(redDamage);
-    this.damageHistory.blue.push(blueDamage);
+    // 只在推演进行中时记录历史（避免添加单位时累积数据）
+    if (isRunning) {
+      // 检查是否是新的时间点（避免同一时间点重复记录）
+      if (time > (this.lastRecordedTime || -1)) {
+        this.damageHistory.red.push(redDamage);
+        this.damageHistory.blue.push(blueDamage);
+        this.lastRecordedTime = time;
 
-    if (this.damageHistory.red.length > this.maxHistory) {
-      this.damageHistory.red.shift();
-      this.damageHistory.blue.shift();
+        if (this.damageHistory.red.length > this.maxHistory) {
+          this.damageHistory.red.shift();
+          this.damageHistory.blue.shift();
+        }
+      }
+    } else if (time === 0) {
+      // 重置时清空历史
+      this.damageHistory.red = [];
+      this.damageHistory.blue = [];
+      this.lastRecordedTime = -1;
     }
 
     // 绘制图表
@@ -100,7 +112,22 @@ class StatsPanel {
   }
 
   updateBattleStatus(stats, combatEvents) {
-    this.engagementCount += combatEvents.length;
+    // 只统计新的战斗事件（通过step或时间戳识别）
+    const newEvents = combatEvents.filter(event => {
+      const eventId = `${event.step}_${event.time}_${event.attacker}_${event.target}`;
+      if (this.processedEvents.has(eventId)) {
+        return false;
+      }
+      this.processedEvents.add(eventId);
+      // 限制已处理事件集合大小，防止内存泄漏
+      if (this.processedEvents.size > 1000) {
+        const iterator = this.processedEvents.values();
+        this.processedEvents.delete(iterator.next().value);
+      }
+      return true;
+    });
+
+    this.engagementCount += newEvents.length;
 
     const statusEl = document.getElementById('statusText');
     if (stats.isRunning) {
@@ -219,7 +246,11 @@ class StatsPanel {
 
     // 绑定按钮事件
     modal.querySelector('#btnSaveReplay').addEventListener('click', () => {
-      window.app.saveReplay();
+      // 自动生成名称并保存到服务器
+      const now = new Date();
+      const name = `推演_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
+      window.app.send({ cmd: 'saveReplay', name });
+      window.app.addLog(`正在保存回放: ${name}`, 'success');
       modal.remove();
     });
 
@@ -231,6 +262,7 @@ class StatsPanel {
   reset() {
     this.damageHistory = { red: [], blue: [] };
     this.engagementCount = 0;
+    this.processedEvents.clear(); // 清空已处理事件记录
     this.endGameModalShown = false;
   }
 }
