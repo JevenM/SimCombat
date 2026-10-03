@@ -767,29 +767,52 @@ class Simulation {
     }
   }
 
+  /**
+   * 实体序列化：推演状态与回放帧共用，保证回放时各面板/视图看到的数据与推演完全一致
+   */
+  serializeEntity(e) {
+    return {
+      id: e.id,
+      name: e.name,
+      side: e.side,
+      equipmentType: e.equipmentType,
+      type: e.type,
+      category: e.category,
+      x: Math.round(e.x),
+      y: Math.round(e.y),
+      z: Math.round(e.z || 0),
+      heading: Math.round(e.heading * 10) / 10,
+      speed: Math.round(Math.hypot(e.vx || 0, e.vy || 0) * 10) / 10,
+      hp: Math.round(e.hp),
+      maxHp: e.maxHp,
+      range: e.range,
+      vision: e.vision,
+      detection: e.detection,
+      damage: e.damage,
+      fireRate: e.fireRate,
+      accuracy: e.accuracy,
+      armor: e.armor,
+      status: e.status,
+      detectedContacts: e.detectedContacts?.length || 0,
+      // 空中姿态（3D 俯仰/滚转渲染）
+      pitch: isAirEntity(e) ? Math.round((e.pitch || 0) * 10) / 10 : undefined,
+      roll: isAirEntity(e) ? Math.round((e.roll || 0) * 10) / 10 : undefined,
+      maneuver: isAirEntity(e) ? e.bfmManeuver : undefined
+    };
+  }
+
   recordFrame() {
     const frame = {
       time: this.time,
+      stepCount: this.stepCount,
       duelMode: this.duelMode,
-      entities: this.entities.map(e => ({
-        id: e.id,
-        name: e.name,           // 保存名字
-        side: e.side,
-        type: e.equipmentType,
-        x: e.x,
-        y: e.y,
-        z: e.z,
-        heading: e.heading,
-        hp: e.hp,
-        maxHp: e.maxHp,
-        status: e.status,
-        detectedContacts: e.detectedContacts?.map(c => c.id)
-      })),
+      entities: this.entities.map(e => this.serializeEntity(e)),
       combatEvents: this.blackboard.combatEvents || [],  // 保存战斗事件
       stats: { ...this.stats },
-      // 空战对决：回放帧附带导弹与航迹快照
-      missiles: this.duelMode ? this.duelMissiles : undefined,
-      trails: this.duelMode ? this.duelTrails : undefined
+      // 空战对决：回放帧附带态势、导弹与航迹快照（与 getState 保持一致）
+      duel: this.duelMode ? this.airCombat.getSnapshot(this.entities) : null,
+      missiles: this.duelMode ? this.duelMissiles : [],
+      trails: this.duelMode ? this.duelTrails : []
     };
 
     this.replay.push(frame);
@@ -826,34 +849,7 @@ class Simulation {
       stepCount: this.stepCount,
       time: this.time,
       isRunning: this.isRunning,
-      entities: this.entities.map(e => ({
-        id: e.id,
-        name: e.name,
-        side: e.side,
-        equipmentType: e.equipmentType,
-        type: e.type,
-        category: e.category,
-        x: Math.round(e.x),
-        y: Math.round(e.y),
-        z: Math.round(e.z || 0),
-        heading: Math.round(e.heading * 10) / 10,
-        speed: Math.round(Math.hypot(e.vx || 0, e.vy || 0) * 10) / 10,
-        hp: Math.round(e.hp),
-        maxHp: e.maxHp,
-        range: e.range,
-        vision: e.vision,
-        detection: e.detection,
-        damage: e.damage,
-        fireRate: e.fireRate,
-        accuracy: e.accuracy,
-        armor: e.armor,
-        status: e.status,
-        detectedContacts: e.detectedContacts?.length || 0,
-        // 空中姿态（3D 俯仰/滚转渲染）
-        pitch: isAirEntity(e) ? Math.round((e.pitch || 0) * 10) / 10 : undefined,
-        roll: isAirEntity(e) ? Math.round((e.roll || 0) * 10) / 10 : undefined,
-        maneuver: isAirEntity(e) ? e.bfmManeuver : undefined
-      })),
+      entities: this.entities.map(e => this.serializeEntity(e)),
       stats: this.stats,
       combatEvents: this.blackboard.combatEvents || [],
       duel: this.duelMode ? this.airCombat.getSnapshot(this.entities) : null,

@@ -164,11 +164,6 @@ class SimCombatApp {
       this.attackAnimations.updateAttackLinePositions(state.entities);
     }
 
-    // 推演停止时清除所有攻击动画
-    if (!state.isRunning && this.attackAnimations) {
-      this.attackAnimations.clearAll();
-    }
-
     // 更新统计面板
     this.statsPanel.update(state.stats, state.combatEvents || [], state.isRunning, state.time);
 
@@ -218,6 +213,13 @@ class SimCombatApp {
     // 清理过期的持续攻击线（超过3秒未更新的攻击线）
     if (this.attackAnimations) {
       this.attackAnimations.cleanupStaleAttacks(3000);
+
+      // 推演已停止：等最后的命中特效播完再统一清理，避免攻击线永久留在地图上
+      if (state.isRunning) {
+        this.cancelAttackAnimationsCleanup();
+      } else {
+        this.scheduleAttackAnimationsCleanup();
+      }
     }
 
     // 更新按钮状态
@@ -234,6 +236,25 @@ class SimCombatApp {
     } else if (!this._endDialogShown && !this.replayPlaying && (state.stats?.winner || state.stats?.endTime)) {
       this._endDialogShown = true;
       this.showEndGameDialog(state.stats);
+    }
+  }
+
+  /**
+   * 推演停止后延迟清理攻击动画：给最后的命中/爆炸特效留出播放时间，
+   * 之后统一清除，避免攻击线（双向红蓝箭头）永远留在 2D 地图上
+   */
+  scheduleAttackAnimationsCleanup(delay = 1500) {
+    if (this._attackCleanupTimer) return;
+    this._attackCleanupTimer = setTimeout(() => {
+      this._attackCleanupTimer = null;
+      this.attackAnimations?.clearAll();
+    }, delay);
+  }
+
+  cancelAttackAnimationsCleanup() {
+    if (this._attackCleanupTimer) {
+      clearTimeout(this._attackCleanupTimer);
+      this._attackCleanupTimer = null;
     }
   }
 
@@ -600,9 +621,7 @@ class SimCombatApp {
 
     // 回放控制
     document.getElementById('replayPlay')?.addEventListener('click', () => {
-      this.replayPlaying = !this.replayPlaying;
-      const btn = document.getElementById('replayPlay');
-      if (btn) btn.textContent = this.replayPlaying ? '⏸' : '▶';
+      this.toggleReplay();
     });
 
     document.getElementById('replaySlider')?.addEventListener('input', (e) => {
@@ -611,9 +630,8 @@ class SimCombatApp {
     });
 
     document.getElementById('replayClose')?.addEventListener('click', () => {
-      this.stopReplay();
-      const bar = document.getElementById('replayBar');
-      if (bar) bar.style.display = 'none';
+      // 关闭回放条即结束回放并清理场景
+      this.clearSceneAfterReplay();
     });
 
     // 回放速率控制
@@ -639,10 +657,15 @@ class SimCombatApp {
       return;
     }
 
-    // 清除之前的攻击动画
+    // 清掉上一轮推演的残留：攻击动画、地图上的航迹/导弹/单位标记、3D 特效
     if (this.attackAnimations) {
       this.attackAnimations.clearAll();
     }
+    this.map2d?.clear();
+    this.view3d?.clearEffects?.();
+
+    // 重置统计（交战计数、伤害曲线、已处理事件），保证重复播放口径一致
+    if (this.statsPanel) this.statsPanel.reset();
 
     const replayBar = document.getElementById('replayBar');
     const replaySlider = document.getElementById('replaySlider');
@@ -654,10 +677,15 @@ class SimCombatApp {
 
     // 显示初始场景（如果存在）
     if (this.replayInitialScene) {
-      this.map2d.updateEntities(this.replayInitialScene.entities || [], true, false);
-      this.view3d.updateEntities(this.replayInitialScene.entities || [], true, false);
+      const showLabels = document.getElementById('showLabels')?.checked ?? true;
+      const showRange = document.getElementById('showRange')?.checked ?? false;
+      this.map2d.updateEntities(this.replayInitialScene.entities || [], showLabels, showRange);
+      this.view3d.updateEntities(this.replayInitialScene.entities || [], showLabels, showRange);
       this.statsPanel.update(this.replayInitialScene.stats || {}, [], false, this.replayInitialScene.time || 0);
     }
+
+    // 把视野定位到战场，避免战场落在视野之外看不到打斗画面
+    this.fitReplayBounds(this.replayInitialScene?.entities || this.replay?.[0]?.entities || []);
 
     // 显示回放名称
     const replayTitle = name ? `回放: ${name}` : '推演回放';
@@ -668,35 +696,95 @@ class SimCombatApp {
 
     // 清除之前的 interval
     if (this.replayInterval) {
-      clearInterval(this.replayInterval);
+      clearTimeout(this.replayInterval);
     }
-
-    const playFrame = () => {
-      if (!this.replayPlaying) return;
-
-      if (this.replayIndex < this.replay.length - 1) {
-        this.replayIndex++;
-        this.updateReplayFrame();
-        // 根据速率设置下一帧的延迟
-        const delay = 200 / this.replaySpeed;
-        this.replayInterval = setTimeout(playFrame, delay);
-      } else {
-        // 回放结束
-        this.replayPlaying = false;
-        const btn = document.getElementById('replayPlay');
-        if (btn) btn.textContent = '▶';
-        // 显示推演结果
-        this.showReplayResult();
-        // 停止场景中的动画
-        if (this.attackAnimations) {
-          this.attackAnimations.clearAll();
-        }
-      }
-    };
 
     // 开始播放
     const initialDelay = 200 / this.replaySpeed;
-    this.replayInterval = setTimeout(playFrame, initialDelay);
+    this.replayInterval = setTimeout(() => this.playReplayFrame(), initialDelay);
+  }
+
+  /**
+   * 回放开始时把 2D 视野定位到战场范围（只做一次，避免每帧跳动）
+   */
+  fitReplayBounds(entities) {
+    if (!entities || entities.length === 0) return;
+    if (!this.map2d?.map || typeof L === 'undefined') return;
+
+    const points = entities
+      .filter(e => Number.isFinite(e.x) && Number.isFinite(e.y))
+      .map(e => {
+        const g = this.map2d.simToGeo(e.x, e.y);
+        return [g.lat, g.lng];
+      });
+    if (points.length === 0) return;
+
+    this.map2d.map.fitBounds(L.latLngBounds(points).pad(0.4), { animate: false });
+  }
+
+  /**
+   * 回放的单帧推进：抽成方法，暂停后可从当前帧继续播放（原来暂停就再也放不动）
+   */
+  playReplayFrame() {
+    if (!this.replayPlaying || !this.replay) return;
+
+    if (this.replayIndex < this.replay.length - 1) {
+      this.replayIndex++;
+      this.updateReplayFrame();
+      const delay = 200 / (this.replaySpeed || 1);
+      this.replayInterval = setTimeout(() => this.playReplayFrame(), delay);
+      return;
+    }
+
+    // 回放结束
+    this.replayPlaying = false;
+    const btn = document.getElementById('replayPlay');
+    if (btn) btn.textContent = '▶';
+    const statusText = document.getElementById('statusText');
+    if (statusText) {
+      statusText.textContent = '回放结束';
+      statusText.className = 'badge stopped';
+    }
+    // 显示推演结果
+    this.showReplayResult();
+    // 停止场景中的动画，并清掉回放最后一帧的航迹/导弹与 3D 特效
+    if (this.attackAnimations) {
+      this.attackAnimations.clearAll();
+    }
+    this.map2d?.clearDuelVisuals?.();
+    this.view3d?.clearEffects?.();
+  }
+
+  /**
+   * 回放的播放/暂停切换
+   */
+  toggleReplay() {
+    if (!this.replay || this.replay.length === 0) return;
+
+    this.replayPlaying = !this.replayPlaying;
+    const btn = document.getElementById('replayPlay');
+    if (btn) btn.textContent = this.replayPlaying ? '⏸' : '▶';
+
+    if (this.replayPlaying) {
+      // 若已播到最后一帧，从头开始
+      if (this.replayIndex >= this.replay.length - 1) {
+        this.replayIndex = 0;
+      }
+      if (this.replayInterval) clearTimeout(this.replayInterval);
+      this.replayInterval = setTimeout(() => this.playReplayFrame(), 200 / (this.replaySpeed || 1));
+      const statusText = document.getElementById('statusText');
+      if (statusText) {
+        statusText.textContent = '回放中';
+        statusText.className = 'badge running';
+      }
+    } else {
+      if (this.replayInterval) clearTimeout(this.replayInterval);
+      const statusText = document.getElementById('statusText');
+      if (statusText) {
+        statusText.textContent = '回放暂停';
+        statusText.className = 'badge stopped';
+      }
+    }
   }
 
   stopReplay() {
@@ -799,9 +887,27 @@ class SimCombatApp {
         `T=${Math.round(frame.time)}s (${this.replayIndex}/${this.replay.length})`;
     }
 
+    // 兼容旧回放文件：帧里只有 type 字段，补齐 equipmentType，保证图标/姿态与推演一致
+    const entities = (frame.entities || []).map(e => ({
+      ...e,
+      equipmentType: e.equipmentType || e.type
+    }));
+
+    // 与实时推演一致：沿用「显示标签 / 显示射程」开关
+    const showLabels = document.getElementById('showLabels')?.checked ?? true;
+    const showRange = document.getElementById('showRange')?.checked ?? false;
+
     // 更新实体显示
-    this.map2d.updateEntities(frame.entities, true, false);
-    this.view3d.updateEntities(frame.entities, true, false);
+    this.map2d.updateEntities(entities, showLabels, showRange);
+    this.view3d.updateEntities(entities, showLabels, showRange);
+
+    // 回放帧自带的空战航迹/导弹（帧里没有则清空，避免残留到回放画面中）
+    this.map2d?.updateDuelVisuals?.(frame.missiles || [], frame.trails || [], entities);
+    this.view3d?.updateDuelVisuals?.(frame.missiles || [], frame.trails || [], entities);
+    this.map2d?.updateDuelAircraft?.(frame.duelMode ? entities : []);
+
+    // 各面板数据与实时推演保持同一口径
+    this.syncPanelsForReplay(frame, entities);
 
     // 播放战斗事件（攻击动画）
     if (frame.combatEvents && frame.combatEvents.length > 0) {
@@ -809,16 +915,60 @@ class SimCombatApp {
         // 检查攻击者和目标是否都存在（避免显示错误效果）
         const attackerId = event.attacker || event.killer;
         const targetId = event.target || event.victim;
-        const attacker = frame.entities.find(e => e.id === attackerId);
-        const target = frame.entities.find(e => e.id === targetId);
+        const attacker = entities.find(e => e.id === attackerId);
+        const target = entities.find(e => e.id === targetId);
 
         // 只有攻击者和目标都存在时才显示攻击动画
         if (attacker && target && target.hp > 0) {
           if (this.attackAnimations) {
-            this.attackAnimations.handleCombatEvent(event, frame.entities);
+            this.attackAnimations.handleCombatEvent(event, entities);
           }
         }
       }
+    }
+  }
+
+  /**
+   * 回放播放时的面板同步：统计大屏、顶部指标、状态徽章、空战态势条、战斗日志
+   * 与实时推演（updateState）保持一致的显示口径
+   */
+  syncPanelsForReplay(frame, entities) {
+    const stats = frame.stats || {};
+    const events = frame.combatEvents || [];
+
+    // 统计大屏（伤亡 / 伤害曲线 / 交战次数 / 战术主导 / 结论）
+    this.statsPanel.update(stats, events, true, frame.time);
+
+    // 顶部指标
+    document.getElementById('simTime').textContent = `${Math.round(frame.time)}s`;
+    const stepInfo = frame.stepCount !== undefined ? ` (步#${frame.stepCount})` : '';
+    document.getElementById('entityCount').textContent = entities.length + stepInfo;
+    document.getElementById('redUnits').textContent = stats.redUnits ?? 0;
+    document.getElementById('blueUnits').textContent = stats.blueUnits ?? 0;
+
+    const statusText = document.getElementById('statusText');
+    if (statusText) {
+      statusText.textContent = '回放中';
+      statusText.className = 'badge running';
+    }
+
+    // 空战态势条（回放帧带 duel 快照）
+    if (this.airDuel && frame.duel) {
+      this.airDuel.update(frame.duel);
+    }
+
+    // 选中单位侧栏随回放刷新
+    if (this.selectedEntity) {
+      const current = entities.find(e => e.id === this.selectedEntity.id);
+      if (current) {
+        this.selectedEntity = current;
+        this.showEntityInfo(current);
+      }
+    }
+
+    // 战斗日志（与推演一致）
+    for (const event of events) {
+      this.addCombatLog(event);
     }
   }
 
@@ -1738,8 +1888,9 @@ class SimCombatApp {
       this.attackAnimations.clearAll();
     }
 
-    // 清空地图上的实体
+    // 清空地图上的实体与 3D 空战特效
     this.map2d.clear();
+    if (this.view3d) this.view3d.clearEffects();
 
     // 清空状态
     this.state = null;

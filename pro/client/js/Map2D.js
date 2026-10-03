@@ -2,6 +2,10 @@
  * Map2D - Leaflet 2D地图视图
  */
 class Map2D {
+  // 无演习区域时使用的默认仿真范围（约 10km × 10km）
+  static get DEFAULT_LAT_RANGE() { return 0.09; }
+  static get DEFAULT_LNG_RANGE() { return 0.11; }
+
   constructor(containerId) {
     this.containerId = containerId;
     this.map = null;
@@ -469,9 +473,33 @@ class Map2D {
     }
   }
 
+  /**
+   * 无演习区域时的默认坐标原点。
+   * 必须固定为「首次使用的地图中心」：若每次都取当前 center，地图一平移/缩放，
+   * 同一仿真坐标就会映射到新的地理位置，回放时表现为坐标随时间漂移、画面错乱。
+   */
+  getDefaultOrigin() {
+    if (!this._defaultOrigin) {
+      const center = this.map.getCenter();
+      this._defaultOrigin = { lat: center.lat, lng: center.lng };
+    }
+    return this._defaultOrigin;
+  }
+
   // 地理坐标 -> 仿真坐标
   geoToSim(lat, lng) {
-    if (!this.coordTransform) return { x: 5000, y: 5000 };
+    if (!this.coordTransform) {
+      // 无演习区域：使用固定默认原点（约 10km x 10km），与 simToGeo 互为逆变换
+      const center = this.getDefaultOrigin();
+      const latRange = Map2D.DEFAULT_LAT_RANGE;
+      const lngRange = Map2D.DEFAULT_LNG_RANGE;
+      const x = Math.round((lng - (center.lng - lngRange / 2)) / lngRange * 10000);
+      const y = Math.round((lat - (center.lat - latRange / 2)) / latRange * 10000);
+      return {
+        x: Math.max(0, Math.min(10000, x)),
+        y: Math.max(0, Math.min(10000, y))
+      };
+    }
 
     const x = Math.round((lng - this.coordTransform.lngMin) / this.coordTransform.lngRange * 10000);
     const y = Math.round((lat - this.coordTransform.latMin) / this.coordTransform.latRange * 10000);
@@ -485,13 +513,12 @@ class Map2D {
   // 仿真坐标 -> 地理坐标
   simToGeo(x, y) {
     if (!this.coordTransform) {
-      // 没有演习区域时，使用默认转换（基于地图中心）
-      const center = this.map.getCenter();
-      // 假设默认范围约 10km x 10km
-      const latRange = 0.09;  // 约 10km
-      const lngRange = 0.11;  // 约 10km at latitude 40°
-      const lat = center.lat - latRange/2 + (y / 10000) * latRange;
-      const lng = center.lng - lngRange/2 + (x / 10000) * lngRange;
+      // 没有演习区域时，使用固定默认原点（基于首次地图中心）
+      const center = this.getDefaultOrigin();
+      const latRange = Map2D.DEFAULT_LAT_RANGE;  // 约 10km
+      const lngRange = Map2D.DEFAULT_LNG_RANGE;  // 约 10km at latitude 40°
+      const lat = center.lat - latRange / 2 + (y / 10000) * latRange;
+      const lng = center.lng - lngRange / 2 + (x / 10000) * lngRange;
       return { lat, lng };
     }
 

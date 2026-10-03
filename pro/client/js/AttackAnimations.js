@@ -9,7 +9,45 @@ class AttackAnimations {
     this.activeAnimations = new Map(); // id -> animation
     this.sustainedAttacks = new Map(); // attackerId -> {line, startTime}
     this.particleContainer = null;
+    this.timers = new Set();     // 所有延迟回调，clearAll 时可整体取消
+    this.generation = 0;         // 清理世代：clearAll 后旧的延迟回调全部失效
+    this.autoCleanupTimer = null;
     this.init();
+    this.startAutoCleanup();
+  }
+
+  /**
+   * 受管的延时回调：clearAll() 之后不再执行，避免清理后又被补画回地图
+   */
+  schedule(fn, delay) {
+    const gen = this.generation;
+    const id = setTimeout(() => {
+      this.timers.delete(id);
+      if (gen !== this.generation) return; // 已被 clearAll 取消
+      fn();
+    }, delay);
+    this.timers.add(id);
+    return id;
+  }
+
+  /**
+   * 自动清理过期攻击线（不依赖推演广播，推演/回放停止后也能自动消失）
+   */
+  startAutoCleanup() {
+    if (this.autoCleanupTimer) return;
+    this.autoCleanupTimer = setInterval(() => {
+      if (this.sustainedAttacks.size > 0) {
+        this.cleanupStaleAttacks(3000);
+      }
+    }, 1000);
+  }
+
+  destroy() {
+    if (this.autoCleanupTimer) {
+      clearInterval(this.autoCleanupTimer);
+      this.autoCleanupTimer = null;
+    }
+    this.clearAll();
   }
 
   init() {
@@ -102,7 +140,7 @@ class AttackAnimations {
     }).addTo(this.particleContainer);
 
     // 2秒后移除调试标记
-    setTimeout(() => {
+    this.schedule(() => {
       this.particleContainer.removeLayer(startMarker);
       this.particleContainer.removeLayer(endMarker);
     }, 3000);
@@ -349,7 +387,7 @@ class AttackAnimations {
         zIndexOffset: 2000
       }).addTo(this.particleContainer);
 
-      setTimeout(() => {
+      this.schedule(() => {
         this.particleContainer.removeLayer(marker);
       }, 600);
     }
@@ -547,7 +585,7 @@ class AttackAnimations {
         this.createExplosion(to, { color, type });
 
         // 清理
-        setTimeout(() => {
+        this.schedule(() => {
           this.particleContainer.removeLayer(fullPath);
           this.particleContainer.removeLayer(glowPath);
           this.particleContainer.removeLayer(arrow);
@@ -686,7 +724,7 @@ class AttackAnimations {
 
     // 波纹扩散动画
     ripples.forEach(ripple => {
-      setTimeout(() => {
+      this.schedule(() => {
         const startTime = Date.now();
         const duration = 600;
 
@@ -716,7 +754,7 @@ class AttackAnimations {
     });
 
     // 清理核心
-    setTimeout(() => {
+    this.schedule(() => {
       this.particleContainer.removeLayer(core);
     }, 500);
   }
@@ -742,7 +780,7 @@ class AttackAnimations {
       zIndexOffset: 2000
     }).addTo(this.particleContainer);
 
-    setTimeout(() => {
+    this.schedule(() => {
       this.particleContainer.removeLayer(marker);
     }, 600);
   }
@@ -772,7 +810,7 @@ class AttackAnimations {
       zIndexOffset: 3000
     }).addTo(this.particleContainer);
 
-    setTimeout(() => {
+    this.schedule(() => {
       this.particleContainer.removeLayer(marker);
     }, 1000);
   }
@@ -800,11 +838,11 @@ class AttackAnimations {
       });
 
       // 延迟创建次级爆炸
-      setTimeout(() => {
+      this.schedule(() => {
         this.createSmallExplosion(pos);
       }, 150);
 
-      setTimeout(() => {
+      this.schedule(() => {
         const ripple = L.circle([pos.lat, pos.lng], {
           radius: 40,
           color: '#ff6600',
@@ -814,7 +852,12 @@ class AttackAnimations {
         }).addTo(this.particleContainer);
 
         let opacity = 0.5;
+        const gen = this.generation;
         const fadeOut = setInterval(() => {
+          if (gen !== this.generation) { // 已被 clearAll 取消
+            clearInterval(fadeOut);
+            return;
+          }
           opacity -= 0.05;
           if (opacity <= 0) {
             clearInterval(fadeOut);
@@ -969,7 +1012,7 @@ class AttackAnimations {
     // 如果是击杀事件，结束持续攻击显示并播放摧毁效果
     const isKill = event.type === 'kill';
     if (isKill) {
-      setTimeout(() => {
+      this.schedule(() => {
         this.endSustainedAttack(attackerId, targetId);
       }, 500);
     }
@@ -985,7 +1028,7 @@ class AttackAnimations {
       const damagePercent = damage / maxHp;
 
       // 延迟执行效果
-      setTimeout(() => {
+      this.schedule(() => {
         // 重新获取目标的当前位置（确保爆炸效果显示在正确位置）
         const currentTarget = entities.find(e => e.id === targetId);
         let explosionPos;
@@ -1032,13 +1075,13 @@ class AttackAnimations {
 
       // 如果是击杀事件，结束攻击线
       if (isKill) {
-        setTimeout(() => {
+        this.schedule(() => {
           this.endSustainedAttack(attackerId, targetId);
         }, 500);
       }
     } else {
       // 未命中 - 显示❌标记
-      setTimeout(() => {
+      this.schedule(() => {
         // 未命中时，在攻击发生时的位置显示（因为未命中时目标可能已经移动）
         this.createHitMarker(targetPos, false, '❌ 未命中');
       }, 300);
@@ -1049,8 +1092,14 @@ class AttackAnimations {
    * 清除所有动画
    */
   clearAll() {
+    // 让所有尚未执行的延迟回调失效（否则清理后仍会被补画到地图上）
+    this.generation++;
+    this.timers.forEach(id => clearTimeout(id));
+    this.timers.clear();
+
     this.particleContainer.clearLayers();
     this.sustainedAttacks.clear();
+    console.log('[攻击线] 全部清除（含未完成的延时特效）');
   }
 }
 
