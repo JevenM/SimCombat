@@ -147,6 +147,18 @@ class SimCombatApp {
     this.map2d.updateEntities(state.entities, showLabels, showRange);
     this.view3d.updateEntities(state.entities, showLabels, showRange);
 
+    // 更新空战对决可视化（航迹 / 导弹 / 3D 姿态）
+    this.map2d?.updateDuelVisuals?.(state.missiles || [], state.trails || [], state.entities);
+    this.view3d?.updateDuelVisuals?.(state.missiles || [], state.trails || [], state.entities);
+
+    // 双机实时标签（只在空战对决模式下显示，并随推演跟随战机）
+    this.map2d?.updateDuelAircraft?.(state.duel?.enabled ? (state.entities || []) : []);
+
+    // 更新空战态势条
+    if (this.airDuel && state.duel) {
+      this.airDuel.update(state.duel);
+    }
+
     // 更新攻击线位置（跟随移动的单位）
     if (this.attackAnimations && state.isRunning) {
       this.attackAnimations.updateAttackLinePositions(state.entities);
@@ -216,82 +228,85 @@ class SimCombatApp {
     document.getElementById('statusText').textContent = state.isRunning ? '推演中' : '待机';
     document.getElementById('statusText').className = state.isRunning ? 'badge running' : 'badge stopped';
 
-    // 检测推演是否刚结束（之前有winner且现在isRunning为false）
-    if (!state.isRunning && state.stats?.winner && !this._endDialogShown) {
+    // 推演结束只弹一次统一的结果对话框（胜负 + 回放保存）
+    if (state.isRunning) {
+      this._endDialogShown = false;
+    } else if (!this._endDialogShown && !this.replayPlaying && (state.stats?.winner || state.stats?.endTime)) {
       this._endDialogShown = true;
       this.showEndGameDialog(state.stats);
     }
   }
 
   /**
-   * 显示推演结束对话框
+   * 推演结束的统一对话框：结果 + 伤亡对比 + 回放保存（原来会同时弹出两个框）
    */
   showEndGameDialog(stats) {
     const winner = stats.winner;
     const endReason = stats.endReason || '推演完成';
+    const sideClass = winner === 'red' ? 'side-red' : winner === 'blue' ? 'side-blue' : 'side-draw';
+    const title = winner === 'red' ? '🔴 红军胜利' : winner === 'blue' ? '🔵 蓝军胜利' : '🤝 推演平局';
+    const icon = winner === 'red' || winner === 'blue' ? '🏆' : '🤝';
 
     const resultHtml = `
-      <div id="endGameModal" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-                  background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
-                  border: 2px solid ${winner === 'red' ? '#ff4444' : winner === 'blue' ? '#4488ff' : '#888'};
-                  border-radius: 16px; padding: 30px; min-width: 380px; text-align: center; z-index: 10000;
-                  box-shadow: 0 0 50px ${winner === 'red' ? 'rgba(255,68,68,0.3)' : winner === 'blue' ? 'rgba(68,136,255,0.3)' : 'rgba(128,128,128,0.3)'};">
-        <div style="font-size: 42px; margin-bottom: 15px;">
-          ${winner === 'red' ? '🏆 🔴 红军胜利' : winner === 'blue' ? '🏆 🔵 蓝军胜利' : '🤝 平局'}
-        </div>
-        <div style="color: #8b949e; margin-bottom: 20px; font-size: 14px;">${endReason}</div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 8px;">
-          <div>
-            <div style="color: #ff6b6b; font-size: 24px; font-weight: bold;">${stats.redCasualties || 0}</div>
-            <div style="color: #8b949e; font-size: 12px;">红军伤亡</div>
+      <div id="endGameModal" class="result-modal ${sideClass}">
+        <div class="result-modal-card">
+          <div class="result-modal-icon">${icon}</div>
+          <h2>${title}</h2>
+          <p class="result-modal-reason">${endReason}</p>
+          <div class="result-modal-stats">
+            <div class="result-stat red">
+              <b>${stats.redCasualties || 0}</b>
+              <span>红军伤亡</span>
+            </div>
+            <div class="result-stat blue">
+              <b>${stats.blueCasualties || 0}</b>
+              <span>蓝军伤亡</span>
+            </div>
           </div>
-          <div>
-            <div style="color: #4dabf7; font-size: 24px; font-weight: bold;">${stats.blueCasualties || 0}</div>
-            <div style="color: #8b949e; font-size: 12px;">蓝军伤亡</div>
+          <p class="result-modal-tip">是否保存此次推演回放，便于后续回看？</p>
+          <div class="result-modal-actions">
+            <button id="btnSaveEndReplay" class="btn btn-primary">💾 保存回放</button>
+            <button id="btnKeepBattlefield" class="btn btn-secondary">🗺️ 留在战场</button>
+            <button id="btnSkipEndReplay" class="btn btn-secondary">🧹 清理场景</button>
           </div>
-        </div>
-        <div style="margin-bottom: 20px;">
-          <p style="color: #8b949e; font-size: 13px; margin-bottom: 10px;">是否保存此次推演回放？</p>
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: center;">
-          <button id="btnSaveEndReplay" style="background: #238636; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">
-            💾 保存回放
-          </button>
-          <button id="btnSkipEndReplay" style="background: #6e7681; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">
-            跳过
-          </button>
         </div>
       </div>
-      <div id="endGameOverlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999;"></div>
     `;
 
     const div = document.createElement('div');
     div.innerHTML = resultHtml;
     document.body.appendChild(div);
 
-    // 保存回放按钮
-    document.getElementById('btnSaveEndReplay')?.addEventListener('click', () => {
-      // 关闭弹窗
-      document.getElementById('endGameModal')?.remove();
-      document.getElementById('endGameOverlay')?.remove();
+    const close = () => document.getElementById('endGameModal')?.remove();
 
-      // 保存回放
+    // 点击遮罩等同于「留在战场」
+    document.getElementById('endGameModal')?.addEventListener('click', (e) => {
+      if (e.target.id === 'endGameModal') close();
+    });
+
+    const saveReplay = () => {
       const now = new Date();
       const name = `推演_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
       this.send({ cmd: 'saveReplay', name });
       this.addLog(`正在保存回放: ${name}`, 'info');
+    };
 
-      // 清理场景
+    // 保存回放（保存后清理场景）
+    document.getElementById('btnSaveEndReplay')?.addEventListener('click', () => {
+      saveReplay();
+      close();
       this.cleanupAfterGame();
     });
 
-    // 跳过按钮
-    document.getElementById('btnSkipEndReplay')?.addEventListener('click', () => {
-      // 关闭弹窗
-      document.getElementById('endGameModal')?.remove();
-      document.getElementById('endGameOverlay')?.remove();
+    // 只关闭弹窗，保留最终态势供查看
+    document.getElementById('btnKeepBattlefield')?.addEventListener('click', () => {
+      close();
+      this.addLog('已保留最终态势，可在地图上查看战果', 'info');
+    });
 
-      // 清理场景
+    // 不保存，直接清理场景
+    document.getElementById('btnSkipEndReplay')?.addEventListener('click', () => {
+      close();
       this.cleanupAfterGame();
     });
   }
@@ -326,6 +341,11 @@ class SimCombatApp {
     // 清除地图上的范围圆圈等特效
     this.map2d.clear();
 
+    // 结束空战对决状态（保留出生点标记，便于再次开打）
+    if (this.airDuel) {
+      this.airDuel.onSimulationEnd();
+    }
+
     // 重置结束标记（允许下次推演再次显示）
     this._endDialogShown = false;
 
@@ -345,7 +365,25 @@ class SimCombatApp {
     this.view3d.updateEntities(state.entities, showLabels, showRange);
   }
 
+  /**
+   * 左侧面板按模块分页（想定 / 空战 / 视图 / AI）
+   */
+  initSidebarTabs() {
+    const tabs = document.querySelectorAll('.sidebar-tabs .tab-btn');
+    const panels = document.querySelectorAll('.tab-panels .tab-panel');
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = btn.dataset.tab;
+        tabs.forEach(b => b.classList.toggle('active', b === btn));
+        panels.forEach(p => p.classList.toggle('active', p.dataset.panel === target));
+      });
+    });
+  }
+
   bindEvents() {
+    // 左侧模块化标签页
+    this.initSidebarTabs();
+
     // 控制按钮 - 添加模式检查
     document.getElementById('btnStart').addEventListener('click', () => {
       // 演习模式下检查是否已划定区域
@@ -451,6 +489,12 @@ class SimCombatApp {
 
     // 想定编辑器事件
     this.initScenarioEditor();
+
+    // 空战对决面板
+    if (window.AirDuel && this.map2d) {
+      this.airDuel = new AirDuel(this);
+      this.airDuel.init();
+    }
 
     // 数据操作
     document.getElementById('btnLoad')?.addEventListener('click', () => {
@@ -1079,7 +1123,34 @@ class SimCombatApp {
   addCombatLog(event) {
     const sideColor = event.attackerSide === 'red' ? '红' : '蓝';
     const sideClass = event.attackerSide === 'red' ? 'red' : 'blue';
-    const hitStatus = event.hit ? `命中! 伤害${event.damage}` : '未命中';
+
+    // 空战对决：按武器类型生成更有信息量的日志
+    if (event.type === 'missile_launch') {
+      this.addLog(`[步${event.step}] ${sideColor}方${event.attackerName} 发射空空导弹 → ${event.targetName}，距离 ${event.distance}m`, 'combat');
+      return;
+    }
+    if (event.type === 'missile_miss') {
+      const why = event.reason === 'flare' ? '被红外干扰弹诱骗' : '被高过载机动摆脱';
+      this.addLog(`[步${event.step}] ${sideColor}方导弹脱靶：${event.targetName} ${why}`, 'combat');
+      return;
+    }
+    if (event.type === 'missile_expired') {
+      this.addLog(`[步${event.step}] ${sideColor}方导弹失去动力自毁`, 'combat');
+      return;
+    }
+    if (event.type === 'flare') {
+      this.addLog(`[步${event.step}] ${sideColor}方${event.attackerName} 投放红外干扰弹（剩余 ${event.remaining}）`, 'combat');
+      return;
+    }
+    if (event.type === 'cannon' && !event.hit) {
+      this.addLog(`[步${event.step}] ${sideColor}方${event.attackerName} 航炮射击未命中（${event.distance}m，偏角 ${event.ataDeg}°）`, 'combat');
+      return;
+    }
+
+    const weaponLabel = { cannon: '航炮', missile_hit: '空空导弹' }[event.type] || '';
+    const hitStatus = event.hit
+      ? `命中! ${weaponLabel}伤害${event.damage}`
+      : '未命中';
 
     // 处理未定义的名称 - 增强容错
     const attackerId = event.attacker || '?';
@@ -1384,6 +1455,12 @@ class SimCombatApp {
     // 地图点击事件 - 添加/删除单位/设置路径
     if (this.map2d) {
       this.map2d.onMapClick = (e) => {
+        // 空战对决点取出身点优先处理
+        if (this.airDuel && this.airDuel.isPicking()) {
+          this.airDuel.handleMapClick(e);
+          return;
+        }
+
         if (this.editorMode === 'view') return;
 
         if (this.editorMode === 'remove') {
@@ -1414,7 +1491,7 @@ class SimCombatApp {
 
     // 按钮事件
     document.getElementById('btnClearAll')?.addEventListener('click', () => {
-      if (confirm('确定要清空所有单位吗？')) {
+      if (confirm('确定要清空画布上的所有单位、战机标记与演习区域吗？')) {
         this.clearAllEntities();
       }
     });
@@ -1594,11 +1671,59 @@ class SimCombatApp {
   }
 
   // 清空所有单位
+  /**
+   * 清空画布上的全部元素：单位标记（兵力/战机/人员）、射程与雷达圈、单位路径、
+   * 空战航迹/导弹/双机标签、起飞点标记、攻击动画、3D 特效以及演习区域
+   */
   clearAllEntities() {
-    for (const entity of this.state?.entities || []) {
-      this.send({ cmd: 'removeEntity', entityId: entity.id });
+    // 回放中会不断重绘实体，先停止回放
+    if (this.replayPlaying) {
+      this.stopReplay();
+      const replayBar = document.getElementById('replayBar');
+      if (replayBar) replayBar.style.display = 'none';
     }
-    this.addLog('已清空所有单位', 'info');
+
+    // 停止推演并让服务器清空实体（服务端同时重置统计与对决状态并广播新状态）
+    this.send({ cmd: 'clearAllEntities' });
+
+    // 攻击动画与 3D 特效
+    if (this.attackAnimations) this.attackAnimations.clearAll();
+    if (this.view3d) this.view3d.clearEffects();
+
+    // 地图：单位标记、射程/视野/雷达圈、路径、空战航迹与导弹
+    if (this.map2d) this.map2d.clear();
+
+    // 空战对决：起飞点标记、已选位置、跟随与态势条
+    if (this.airDuel) this.airDuel.reset();
+
+    // 若正在划定区域，先取消（含拖拽中的临时矩形）
+    if (this._areaSelectionHandlers) {
+      this.cancelAreaSelection();
+    }
+
+    // 演习区域（矩形 / 网格 / 标签）
+    if (this.map2d?.exerciseArea || this.exerciseAreaSet) {
+      this.deleteExerciseArea();
+    }
+
+    // 选中态与侧边栏
+    this.selectedEntity = null;
+    const selPanel = document.getElementById('selectedEntity');
+    if (selPanel) selPanel.innerHTML = '<p class="no-selection">未选择单位</p>';
+    if (this.statsPanel) this.statsPanel.reset();
+
+    // 广播到达前先清空本地状态，避免画面残留
+    if (this.state) {
+      this.state.entities = [];
+      this.state.duel = null;
+      this.state.missiles = [];
+      this.state.trails = [];
+    }
+    document.getElementById('entityCount').textContent = '0';
+    document.getElementById('redUnits').textContent = '0';
+    document.getElementById('blueUnits').textContent = '0';
+
+    this.addLog('🗑️ 已清空画布上的所有单位、战机标记与演习区域', 'info');
   }
 
   /**
@@ -1761,6 +1886,7 @@ class SimCombatApp {
         fillOpacity: 0.1,
         dashArray: '5, 5'
       }).addTo(this.map2d.map);
+      this._tempAreaRect = tempRect; // 保存引用，便于取消/清空时移除
     };
 
     const onMouseMove = (e) => {
@@ -1792,6 +1918,7 @@ class SimCombatApp {
       if (tempRect) {
         this.map2d.map.removeLayer(tempRect);
       }
+      this._tempAreaRect = null;
     };
 
     // 绑定事件 - 使用 Leaflet 事件
@@ -1823,6 +1950,12 @@ class SimCombatApp {
       this.map2d.map.off('mousemove', this._areaSelectionHandlers.onMouseMove);
       this.map2d.map.off('mouseup', this._areaSelectionHandlers.onMouseUp);
       this._areaSelectionHandlers = null;
+    }
+
+    // 移除拖拽中的临时矩形
+    if (this._tempAreaRect) {
+      this.map2d.map.removeLayer(this._tempAreaRect);
+      this._tempAreaRect = null;
     }
 
     // 恢复原始点击处理

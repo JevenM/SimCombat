@@ -178,6 +178,9 @@ class TerrainManager {
 
   // 计算移动速度修正
   getMovementSpeedModifier(x, y, mobilityType = 'wheeled') {
+    // 空中单位不受地形通行性与地物影响（否则水域/山地 pass=0 会让战机无法移动）
+    if (mobilityType === 'flight') return 1;
+
     const params = this.getTerrainParams(x, y);
     if (params.pass <= 0) return 0;
 

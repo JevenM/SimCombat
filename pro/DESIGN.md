@@ -109,3 +109,11 @@ simcombat-pro/
     ├── models/
     └── textures/
 ```
+
+#### 启动 pro版本
+
+```shell
+cd D:\Git\SimCombat\pro\server
+npm install
+npm start
+```

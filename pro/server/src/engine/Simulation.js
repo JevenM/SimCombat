@@ -9,7 +9,8 @@ const SmartTacticalAI = require('./ai/SmartTacticalAI');
 const CombatSystem = require('./systems/CombatSystem');
 const PerceptionSystem = require('./systems/PerceptionSystem');
 const MovementSystem = require('./systems/MovementSystem');
-const { getEquipment, getDamageModifier } = require('../data/equipment/Database');
+const AirCombatSystem = require('./systems/AirCombatSystem');
+const { getEquipment, getDamageModifier, isAirEntity } = require('../data/equipment/Database');
 
 class Simulation {
   constructor(config = {}) {
@@ -19,6 +20,7 @@ class Simulation {
     this.isRunning = false;
     this.intervalId = null;
     this.tickRate = config.tickRate || 1000; // ms between ticks
+    this.baseTickRate = this.tickRate;       // 常规推演节奏（对决结束后恢复）
 
     // 初始化子系统
     this.terrain = new TerrainManager(10000, 10000, 50);
@@ -29,6 +31,16 @@ class Simulation {
     this.smartAI = new SmartTacticalAI(this.terrain, this.movement);
     this.useSmartAI = config.useSmartAI !== false;
     this.aiStyle = 'balanced'; // aggressive, balanced, defensive
+
+    // 空战对决子系统（仅在 duelMode 下接管空中单位）
+    this.airCombat = new AirCombatSystem(this.terrain, this.combat, {
+      subSteps: config.airSubSteps || 10,
+      damageScale: config.airDamageScale ?? 0.3
+    });
+    this.duelMode = false;
+    this.duelResult = null;
+    this.duelMissiles = [];
+    this.duelTrails = [];
 
     // 实体管理
     this.entities = [];
@@ -146,6 +158,8 @@ class Simulation {
       side: config.side,
       equipmentType: config.equipmentType,
       type: equipData.type,
+      // category 保留兵种类别（air/ground/naval），type 会被装备键名覆盖
+      category: equipData.category || equipData.type,
       mobilityType: equipData.mobility,
 
       // 位置
@@ -188,11 +202,20 @@ class Simulation {
       fuel: equipData.fuel,
       fuelConsumption: equipData.fuelConsumption,
       indirect: equipData.indirect,
-      cost: equipData.cost
+      cost: equipData.cost,
+
+      // 空战参数（AirCombatSystem 使用）
+      airCombat: config.airCombat || equipData.airCombat
     };
 
-    // 同步高度
-    if (entity.type !== 'air' && entity.type !== 'naval') {
+    // 同步高度 / 初始高度
+    if (isAirEntity(entity)) {
+      // 空中单位保持指定高度，不贴地
+      entity.z = config.z !== undefined
+        ? config.z
+        : Math.max(entity.height || 5000, 300);
+      entity.targetAltitude = entity.z;
+    } else if (entity.type !== 'naval') {
       entity.z = this.terrain.getElevation(entity.x, entity.y);
     }
 
@@ -218,12 +241,8 @@ class Simulation {
     return null;
   }
 
-  // 加载想定
-  loadScenario(scenario) {
-    this.time = 0;
-    this.entities = [];
-    this.entityBehaviors.clear();
-    this.replay = [];
+  // 重置统计数据
+  resetStats() {
     this.stats = {
       redCasualties: 0,
       blueCasualties: 0,
@@ -234,6 +253,17 @@ class Simulation {
       startTime: Date.now(),
       endTime: null
     };
+  }
+
+  // 加载想定
+  loadScenario(scenario) {
+    this.time = 0;
+    this.stepCount = 0;
+    this.entities = [];
+    this.entityBehaviors.clear();
+    this.replay = [];
+    this.resetStats();
+    this.resetDuel();
 
     if (scenario.terrain) {
       this.terrain.loadFromData(
@@ -288,8 +318,11 @@ class Simulation {
     // 2. 感知更新 - 所有单位探测敌情
     this.perception.updatePerception(this.entities);
 
-    // 3. AI行为决策 - 使用SmartTacticalAI或原有行为树
-    if (this.useSmartAI) {
+    // 3a. 空战对决：空中单位由 AirCombatSystem 接管（BFM 子步推进）
+    if (this.duelMode) {
+      this.stepAirDuel();
+    } else if (this.useSmartAI) {
+      // 3b. AI行为决策 - 使用SmartTacticalAI或原有行为树
       const aiResults = this.smartAI.updateAll(this.entities, this.dt);
       // 将AI结果转换为战斗事件
       for (const result of aiResults) {
@@ -345,6 +378,189 @@ class Simulation {
     this.checkEndConditions();
 
     return this.getState();
+  }
+
+  // ====== 空战对决 ======
+
+  /**
+   * 开启一场双机（或多机）空战对决
+   * @param {Object} config - {
+   *   red: { type, x, y, z, heading, name },
+   *   blue: { ... }, style, damageScale
+   * }
+   */
+  startDuel(config = {}) {
+    this.stop();
+    this.time = 0;
+    this.stepCount = 0;
+    this.entities = [];
+    this.entityBehaviors.clear();
+    this.replay = [];
+    this.blackboard.combatEvents = [];
+    this.resetDuel();
+    this.resetStats();
+
+    const red = config.red || {};
+    const blue = config.blue || {};
+
+    // 默认相向而飞：红军在西、蓝军在东，间隔约 4km
+    const redPos = { x: red.x ?? 3000, y: red.y ?? 5000 };
+    const bluePos = { x: blue.x ?? 7000, y: blue.y ?? 5000 };
+
+    const redEntity = this.createEntity({
+      id: 'red_air',
+      side: 'red',
+      equipmentType: red.type || 'fighter',
+      name: red.name,
+      x: redPos.x,
+      y: redPos.y,
+      z: red.z ?? red.altitude ?? 5000,
+      heading: red.heading
+    });
+    const blueEntity = this.createEntity({
+      id: 'blue_air',
+      side: 'blue',
+      equipmentType: blue.type || 'fighter_heavy',
+      name: blue.name,
+      x: bluePos.x,
+      y: bluePos.y,
+      z: blue.z ?? blue.altitude ?? 5000,
+      heading: blue.heading
+    });
+
+    // 未指定航向时默认相向对冲
+    const bearingRedToBlue = Math.atan2(bluePos.y - redPos.y, bluePos.x - redPos.x) * 180 / Math.PI;
+    if (red.heading === undefined) redEntity.heading = bearingRedToBlue;
+    if (blue.heading === undefined) blueEntity.heading = (bearingRedToBlue + 180) % 360;
+
+    this.duelMode = true;
+    this.movement.airDrivenExternally = true;
+    // 空战节奏更快，缩短推演间隔使缠斗过程更流畅
+    this.tickRate = config.tickRate || Math.min(this.baseTickRate, 300);
+    this.airCombat.init(this.entities, {
+      style: config.style || this.aiStyle,
+      damageScale: config.damageScale
+    });
+
+    this.updateStats();
+    this.recordFrame();
+
+    console.log(`空战对决已准备: ${redEntity.name}(红) vs ${blueEntity.name}(蓝), 距离 ${Math.round(Math.hypot(bluePos.x - redPos.x, bluePos.y - redPos.y))}m`);
+    return this.getState();
+  }
+
+  /**
+   * 重置对决运行状态（不影响常规推演）
+   */
+  resetDuel() {
+    this.duelMode = false;
+    this.duelResult = null;
+    this.duelMissiles = [];
+    this.duelTrails = [];
+    this.movement.airDrivenExternally = false;
+    this.tickRate = this.baseTickRate;
+    this.airCombat.reset();
+    return true;
+  }
+
+  /**
+   * 推进空战对决一步（内部多个子步）
+   */
+  stepAirDuel() {
+    const result = this.airCombat.update(this.entities, this.dt);
+    this.duelMissiles = result.missiles;
+    this.duelTrails = result.trails;
+
+    for (const ev of result.events) {
+      this.pushDuelEvent(ev);
+    }
+
+    if (result.ended && !this.duelResult) {
+      this.duelResult = result.ended;
+      this.stats.winner = result.ended.winner;
+      this.stats.endReason = result.ended.reason;
+      this.stats.endTime = Date.now();
+      if (this.replayEnabled) this.recordFrame();
+      this.stop();
+    }
+  }
+
+  /**
+   * 把空战事件转换为统一的战斗事件（兼容 StatsPanel / 攻击动画 / 日志）
+   */
+  pushDuelEvent(ev) {
+    const base = { step: this.stepCount, time: this.time };
+
+    if (ev.kind === 'flare') {
+      this.blackboard.combatEvents.push({
+        ...base,
+        type: 'flare',
+        attacker: ev.entityId,
+        attackerName: ev.entityName,
+        attackerSide: ev.side,
+        remaining: ev.remaining
+      });
+      return;
+    }
+
+    const attackerId = ev.attacker?.id || ev.missile?.shooterId;
+    const attacker = this.entities.find(e => e.id === attackerId);
+    const target = ev.target;
+    if (!attacker) return;
+
+    if (ev.kind === 'missile_launch') {
+      this.blackboard.combatEvents.push({
+        ...base,
+        type: 'missile_launch',
+        attacker: attacker.id,
+        attackerName: attacker.name,
+        attackerSide: attacker.side,
+        target: target?.id,
+        targetName: target?.name,
+        damage: 0,
+        hit: false,
+        distance: ev.distance
+      });
+      return;
+    }
+
+    if (ev.kind === 'missile_expired') {
+      this.blackboard.combatEvents.push({
+        ...base,
+        type: 'missile_expired',
+        attacker: attacker.id,
+        attackerName: attacker.name,
+        attackerSide: attacker.side,
+        target: null,
+        damage: 0,
+        hit: false
+      });
+      return;
+    }
+
+    if (!target) return;
+
+    // 造成伤害类事件（航炮 / 导弹命中 / 脱靶）
+    const damage = Math.round(ev.damage || 0);
+    this.updateDamageStats(attacker.side, damage);
+    this.blackboard.combatEvents.push({
+      ...base,
+      type: ev.kind,
+      attacker: attacker.id,
+      attackerName: attacker.name,
+      attackerSide: attacker.side,
+      target: target.id,
+      targetName: target.name,
+      damage,
+      hit: !!ev.hit,
+      reason: ev.reason || null,
+      distance: ev.distance
+    });
+
+    if (target.hp <= 0 && !target.__killRecorded) {
+      target.__killRecorded = true;
+      this.recordKill(attacker, target);
+    }
   }
 
   // 自动目标识别与交战处理
@@ -515,21 +731,28 @@ class Simulation {
   }
 
   checkEndConditions() {
-    const redUnits = this.entities.filter(e => e.side === 'red' && e.hp > 0 && e.type !== 'air');
-    const blueUnits = this.entities.filter(e => e.side === 'blue' && e.hp > 0 && e.type !== 'air');
+    // 空战对决的胜负由 AirCombatSystem 判定
+    if (this.duelMode) return;
+
+    // 场景为空时不判定（演习初始状态）
+    if (this.entities.length === 0) return;
+
+    // 按阵营存活单位数判定（空中单位同样计入，否则纯空战场景会立刻判平局）
+    const redUnits = this.entities.filter(e => e.side === 'red' && e.hp > 0);
+    const blueUnits = this.entities.filter(e => e.side === 'blue' && e.hp > 0);
 
     let winner = null;
     let reason = '';
 
     if (redUnits.length === 0 && blueUnits.length === 0) {
       winner = 'draw';
-      reason = '双方地面部队全部损失';
+      reason = '双方部队全部损失';
     } else if (redUnits.length === 0) {
       winner = 'blue';
-      reason = '红军地面部队全部被歼灭';
+      reason = '红军部队全部被歼灭';
     } else if (blueUnits.length === 0) {
       winner = 'red';
-      reason = '蓝军地面部队全部被歼灭';
+      reason = '蓝军部队全部被歼灭';
     }
 
     if (winner) {
@@ -547,6 +770,7 @@ class Simulation {
   recordFrame() {
     const frame = {
       time: this.time,
+      duelMode: this.duelMode,
       entities: this.entities.map(e => ({
         id: e.id,
         name: e.name,           // 保存名字
@@ -562,7 +786,10 @@ class Simulation {
         detectedContacts: e.detectedContacts?.map(c => c.id)
       })),
       combatEvents: this.blackboard.combatEvents || [],  // 保存战斗事件
-      stats: { ...this.stats }
+      stats: { ...this.stats },
+      // 空战对决：回放帧附带导弹与航迹快照
+      missiles: this.duelMode ? this.duelMissiles : undefined,
+      trails: this.duelMode ? this.duelTrails : undefined
     };
 
     this.replay.push(frame);
@@ -605,6 +832,7 @@ class Simulation {
         side: e.side,
         equipmentType: e.equipmentType,
         type: e.type,
+        category: e.category,
         x: Math.round(e.x),
         y: Math.round(e.y),
         z: Math.round(e.z || 0),
@@ -620,10 +848,17 @@ class Simulation {
         accuracy: e.accuracy,
         armor: e.armor,
         status: e.status,
-        detectedContacts: e.detectedContacts?.length || 0
+        detectedContacts: e.detectedContacts?.length || 0,
+        // 空中姿态（3D 俯仰/滚转渲染）
+        pitch: isAirEntity(e) ? Math.round((e.pitch || 0) * 10) / 10 : undefined,
+        roll: isAirEntity(e) ? Math.round((e.roll || 0) * 10) / 10 : undefined,
+        maneuver: isAirEntity(e) ? e.bfmManeuver : undefined
       })),
       stats: this.stats,
       combatEvents: this.blackboard.combatEvents || [],
+      duel: this.duelMode ? this.airCombat.getSnapshot(this.entities) : null,
+      missiles: this.duelMode ? this.duelMissiles : [],
+      trails: this.duelMode ? this.duelTrails : [],
       terrain: this.terrain ? {
         width: this.terrain.width,
         height: this.terrain.height,
@@ -703,6 +938,10 @@ class Simulation {
     this.aiStyle = style;
     if (this.smartAI) {
       this.smartAI.setTacticalStyle(style, aggression / 100, formationEnabled);
+    }
+    // 空战 AI 同步切换风格
+    if (this.airCombat) {
+      this.airCombat.setStyle(style);
     }
   }
 

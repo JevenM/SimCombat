@@ -1,7 +1,10 @@
 /**
  * CombatSystem - 战斗裁决系统
- * 包含：直接射击、间瞄射击、导弹制导、电子战
+ * 包含：直接射击、间瞄射击、导弹制导、电子战、航炮（空战）
  */
+const { isAirEntity } = require('../../data/equipment/Database');
+const { angleDiff } = require('./FlightModel');
+
 class CombatSystem {
   constructor(terrain) {
     this.terrain = terrain;
@@ -45,7 +48,7 @@ class CombatSystem {
     hitProb *= (1 - targetTerrain.cover * 0.5);
 
     // 机动类型对命中影响
-    if (target.mobility === 'flight') {
+    if (isAirEntity(target)) {
       hitProb *= 0.7; // 飞行目标难命中
     }
 
@@ -79,6 +82,74 @@ class CombatSystem {
 
     this.combatLog.push(result);
     return result;
+  }
+
+  /**
+   * 航炮射击解算（空战对决专用）
+   * 只有当目标落入射击锥 coneDeg 且位于射程内才形成有效射击；
+   * 距离、偏角与目标机动状态共同决定命中概率
+   * @param {Object} attacker - 攻击机
+   * @param {Object} target - 目标机
+   * @param {number} damageScale - 伤害缩放（拉长格斗节奏）
+   * @returns {Object|null} { distance, ataDeg, hit, damage, hitProb }
+   */
+  resolveCannon(attacker, target, damageScale = 1) {
+    if (!attacker.airCombat || !target || target.hp <= 0 || attacker.hp <= 0) return null;
+
+    const spec = attacker.airCombat.cannon || { range: 1000, coneDeg: 10, damage: 60, fireRate: 5, accuracy: 0.7 };
+    if (attacker.fireCooldown > 0) return null;
+
+    const dist = Math.hypot(target.x - attacker.x, target.y - attacker.y);
+    if (dist > spec.range) return null;
+
+    // 机头指向与瞄准线的夹角（ATA）
+    const bearing = Math.atan2(target.y - attacker.y, target.x - attacker.x) * 180 / Math.PI;
+    const ataDeg = Math.abs(angleDiff(attacker.heading, bearing));
+    if (ataDeg > spec.coneDeg) return null;
+
+    // 高度差过大也难以构成有效射击
+    const altGap = Math.abs((target.z || 0) - (attacker.z || 0));
+    if (altGap > 1200) return null;
+
+    attacker.fireCooldown = 1 / (spec.fireRate || 5);
+
+    const rangeFactor = Math.max(0.2, 1 - (dist / spec.range) * 0.55);
+    const angleFactor = Math.max(0.1, 1 - (ataDeg / spec.coneDeg) * 0.7);
+    const evasionFactor = 1 - (target.evasion || 0) * 0.5;
+    const maneuverFactor = target.status === 'evading' ? 0.55 : 1;
+    const hitProb = Math.max(0.02, Math.min(0.95,
+      (spec.accuracy || 0.7) * rangeFactor * angleFactor * evasionFactor * maneuverFactor));
+
+    const hit = Math.random() < hitProb;
+    let damage = 0;
+
+    if (hit) {
+      let dmg = spec.damage * damageScale * (0.8 + Math.random() * 0.4);
+      if (Math.random() < 0.12) dmg *= 1.8; // 关键部位命中
+      damage = dmg;
+      target.hp = Math.max(0, target.hp - damage);
+      if (target.hp <= 0) target.status = 'destroyed';
+    }
+
+    this.combatLog.push({
+      time: Date.now(),
+      type: 'cannon',
+      attacker: attacker.id,
+      target: target.id,
+      distance: dist,
+      ataDeg,
+      hit,
+      damage,
+      hitProb
+    });
+
+    return {
+      distance: Math.round(dist),
+      ataDeg: Math.round(ataDeg * 10) / 10,
+      hit,
+      damage,
+      hitProb: Math.round(hitProb * 1000) / 1000
+    };
   }
 
   // 间瞄攻击（火炮、导弹）

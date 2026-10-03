@@ -2,10 +2,14 @@
  * MovementSystem - 运动系统
  * 处理单位移动、碰撞检测、编队运动
  */
+const { isAirEntity } = require('../../data/equipment/Database');
+
 class MovementSystem {
   constructor(terrain) {
     this.terrain = terrain;
     this.formations = new Map(); // formationId -> Formation
+    // 空战对决模式下，空中单位由 AirCombatSystem 接管（此处跳过，避免重复积分）
+    this.airDrivenExternally = false;
   }
 
   // 更新所有单位运动
@@ -15,6 +19,7 @@ class MovementSystem {
 
     for (const entity of entities) {
       if (entity.hp <= 0) continue;
+      if (this.airDrivenExternally && isAirEntity(entity)) continue;
       if (!entity.vx && !entity.vy && !entity.moveTarget) continue;
 
       // 编队领导移动
@@ -26,7 +31,7 @@ class MovementSystem {
       }
 
       // 检查高度变化（空中单位）
-      if (entity.type === 'air') {
+      if (isAirEntity(entity)) {
         this.updateAltitude(entity, dt);
       }
 
@@ -37,8 +42,9 @@ class MovementSystem {
           entity.fuel = 0;
           entity.vx = 0;
           entity.vy = 0;
-          if (entity.type === 'air') {
-            entity.hp = 0; // 坠毁
+          if (isAirEntity(entity)) {
+            entity.hp = 0; // 燃油耗尽坠毁
+            entity.status = 'destroyed';
           }
         }
       }
@@ -117,12 +123,15 @@ class MovementSystem {
       entity.heading = (Math.atan2(entity.vy, entity.vx) * 180 / Math.PI + 360) % 360;
     }
 
-    // 检查新位置是否可通行
+    // 检查新位置是否可通行（空中单位直接放行）
     const newX = entity.x + actualVx;
     const newY = entity.y + actualVy;
 
-    const params = this.terrain.getTerrainParams(newX, newY);
-    if (params.pass > 0) {
+    // 空中单位不受地形通行性阻挡
+    const passable = isAirEntity(entity) ||
+      this.terrain.getTerrainParams(newX, newY).pass > 0;
+
+    if (passable) {
       entity.x = newX;
       entity.y = newY;
     } else {
@@ -144,8 +153,8 @@ class MovementSystem {
     entity.x = Math.max(0, Math.min(this.terrain.width, entity.x));
     entity.y = Math.max(0, Math.min(this.terrain.height, entity.y));
 
-    // 同步高度
-    if (entity.type !== 'air' && entity.type !== 'naval') {
+    // 同步高度（空中与海上单位由各自系统维护高度）
+    if (!isAirEntity(entity) && entity.type !== 'naval') {
       entity.z = this.terrain.getElevation(entity.x, entity.y) + (entity.height || 0);
     }
   }
@@ -289,6 +298,9 @@ class MovementSystem {
 
   // 碰撞回避
   avoidCollisions(entity, allEntities) {
+    // 空中单位不参与地面单位的水平排挤（另有垂直间隔与机动规避逻辑）
+    if (isAirEntity(entity)) return;
+
     const avoidanceRadius = 30;
     let avoidX = 0;
     let avoidY = 0;

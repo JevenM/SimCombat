@@ -11,6 +11,9 @@ class Map2D {
     this.radarCircles = new Map();   // 雷达探测范围
     this.attackLines = new Map();    // 攻击线动画
     this.pathLayers = new Map();     // 单位路径
+    this.trailLayers = new Map();    // 空战航迹尾迹
+    this.missileLayers = new Map();  // 空空导弹实时位置
+    this.duelAircraftLayers = new Map(); // 空战双机实时标签
     this.terrainOverlay = null;
     this.selectedId = null;
 
@@ -110,6 +113,25 @@ class Map2D {
     // 保存 Map2D 引用到 layer
     offlineLayer._map2dRef = this;
     this.baseLayers.offline = offlineLayer;
+
+    // 在线瓦片连续加载失败（断网 / 证书被拦截）时自动降级为离线底图
+    this._tileErrorCount = 0;
+    ['standard', 'satellite', 'terrain'].forEach(key => {
+      this.baseLayers[key].on('tileerror', () => {
+        this._tileErrorCount++;
+        if (this._tileErrorCount === 6 && !this.offlineMode) {
+          console.warn('[Map2D] 在线瓦片加载失败，自动切换到离线底图');
+          this.setOfflineMode(true);
+          const box = document.getElementById('offlineMode');
+          if (box) box.checked = true;
+          const status = document.getElementById('offlineStatus');
+          if (status) {
+            status.textContent = '离线模式（瓦片加载失败）';
+            status.style.color = '#58a6ff';
+          }
+        }
+      });
+    });
 
     // 初始化本地缓存
     this.initOfflineCache();
@@ -531,11 +553,53 @@ class Map2D {
             </svg>
             ${destroyOverlay}
           </div>`,
+        // 歼-16 重型战机：宽翼展 + 双垂尾（与轻型/隐身型明显不同）
+        fighter_heavy: `
+          <div style="position:relative;width:32px;height:32px;">
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <path d="M16 3 L25 14 L30 18 L25 21 L22 29 L16 25 L10 29 L7 21 L2 18 L7 14 Z"
+                    fill="${displayColor}" stroke="white" stroke-width="1.5" opacity="${opacity}"/>
+              <rect x="14.5" y="7" width="3" height="15" fill="white" opacity="0.45"/>
+              <line x1="12" y1="25" x2="9" y2="30" stroke="white" stroke-width="1.5"/>
+              <line x1="20" y1="25" x2="23" y2="30" stroke="white" stroke-width="1.5"/>
+            </svg>
+            ${destroyOverlay}
+          </div>`,
+        // 歼-10C 轻型战机：细长三角翼 + 鸭翼
+        fighter_light: `
+          <div style="position:relative;width:32px;height:32px;">
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <path d="M16 2 L19 13 L25 21 L19 19 L17 28 L16 24 L15 28 L13 19 L7 21 L13 13 Z"
+                    fill="${displayColor}" stroke="white" stroke-width="1.5" opacity="${opacity}"/>
+              <line x1="9" y1="10" x2="13" y2="13" stroke="white" stroke-width="1.2"/>
+              <line x1="23" y1="10" x2="19" y2="13" stroke="white" stroke-width="1.2"/>
+            </svg>
+            ${destroyOverlay}
+          </div>`,
         bomber: `
           <div style="position:relative;width:32px;height:32px;">
             <svg width="32" height="32" viewBox="0 0 32 32">
               <ellipse cx="16" cy="16" rx="12" ry="6" fill="${displayColor}" stroke="white" stroke-width="2" opacity="${opacity}"/>
               <rect x="12" y="8" width="8" height="6" fill="${displayColor}" stroke="white" stroke-width="1.5" opacity="${opacity}"/>
+            </svg>
+            ${destroyOverlay}
+          </div>`,
+        // 无人机：细长机体 + 长直翼
+        uav: `
+          <div style="position:relative;width:32px;height:32px;">
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <rect x="14" y="6" width="4" height="20" rx="2" fill="${displayColor}" stroke="white" stroke-width="1.5" opacity="${opacity}"/>
+              <line x1="4" y1="16" x2="28" y2="16" stroke="${displayColor}" stroke-width="3" opacity="${opacity}"/>
+              <line x1="4" y1="16" x2="28" y2="16" stroke="white" stroke-width="1"/>
+            </svg>
+            ${destroyOverlay}
+          </div>`,
+        // 预警机：机身 + 雷达圆盘
+        awacs: `
+          <div style="position:relative;width:32px;height:32px;">
+            <svg width="32" height="32" viewBox="0 0 32 32">
+              <path d="M16 2 L19 14 L19 28 L13 28 L13 14 Z" fill="${displayColor}" stroke="white" stroke-width="1.5" opacity="${opacity}"/>
+              <ellipse cx="16" cy="15" rx="12" ry="4" fill="none" stroke="white" stroke-width="1.5" opacity="${opacity}"/>
             </svg>
             ${destroyOverlay}
           </div>`,
@@ -604,9 +668,12 @@ class Map2D {
         artillery: 'artillery',
         air_defense: 'air_defense',
         fighter: 'fighter',
+        fighter_heavy: 'fighter_heavy',
+        fighter_light: 'fighter_light',
         bomber: 'bomber',
         helicopter: 'helicopter',
-        uav: 'helicopter',
+        uav: 'uav',
+        awacs: 'awacs',
         destroyer: 'ship',
         submarine: 'ship',
         carrier: 'ship',
@@ -639,6 +706,14 @@ class Map2D {
         this.removeEntity(id);
       }
     }
+  }
+
+  // 判断是否空中单位（图标旋转、航迹等仅对空中单位生效）
+  isAirType(entity) {
+    if (!entity) return false;
+    if (entity.category === 'air') return true;
+    return ['fighter', 'fighter_heavy', 'fighter_light', 'bomber', 'helicopter', 'uav', 'awacs']
+      .includes(entity.equipmentType);
   }
 
   updateEntity(entity, showLabels, showRange) {
@@ -680,6 +755,15 @@ class Map2D {
 
     // 更新图标（在被击毁时可能变化）
     layer.setIcon(icon);
+
+    // 空中单位：图标随机头指向旋转，直观体现咬尾与规避
+    if (this.isAirType(entity)) {
+      const el = layer.getElement();
+      if (el) {
+        el.style.transformOrigin = 'center center';
+        el.style.transform = `rotate(${90 - (entity.heading || 0)}deg)`;
+      }
+    }
 
     // 处理标签显示
     if (showLabels) {
@@ -990,11 +1074,168 @@ class Map2D {
     }
   }
 
+  /**
+   * 清空地图上的全部动态图层：单位标记（兵力/战机/人员）、射程圈、视野圈、
+   * 雷达圈、攻击线、单位路径、空战航迹/导弹/双机标签
+   * （地形叠加与演习区域不属于动态元素，需单独 clearExerciseArea）
+   */
   clear() {
     this.entityLayers.forEach(layer => this.map.removeLayer(layer));
     this.rangeCircles.forEach(circle => this.map.removeLayer(circle));
+    this.visionCircles.forEach(circle => this.map.removeLayer(circle));
+    this.radarCircles.forEach(circle => this.map.removeLayer(circle));
+    this.attackLines.forEach(line => this.map.removeLayer(line));
     this.entityLayers.clear();
     this.rangeCircles.clear();
+    this.visionCircles.clear();
+    this.radarCircles.clear();
+    this.attackLines.clear();
+    this.clearAllPaths();
+    this.clearDuelVisuals();
+    this.selectedId = null;
+  }
+
+  /**
+   * 空战对决可视化：航迹尾迹 + 飞行中的导弹
+   * @param {Array} missiles - [{ id, side, x, y, z, heading }]
+   * @param {Array} trails - [{ entityId, points: [[x,y,z], ...] }]
+   * @param {Array} entities - 实体列表（用于取阵营颜色）
+   */
+  updateDuelVisuals(missiles = [], trails = [], entities = []) {
+    if (!this.map) return;
+
+    const sideById = new Map(entities.map(e => [e.id, e.side]));
+    const colorOf = side => (side === 'red' ? '#ff4d4d' : '#4dabf7');
+
+    // ---- 航迹 ----
+    const activeTrailIds = new Set();
+    for (const trail of trails) {
+      if (!trail || !Array.isArray(trail.points) || trail.points.length < 2) continue;
+      activeTrailIds.add(trail.entityId);
+
+      const latlngs = trail.points.map(p => {
+        const geo = this.simToGeo(p[0], p[1]);
+        return [geo.lat, geo.lng];
+      });
+      const color = colorOf(sideById.get(trail.entityId) || 'red');
+
+      let layer = this.trailLayers.get(trail.entityId);
+      if (!layer) {
+        layer = L.polyline(latlngs, {
+          color,
+          weight: 2,
+          opacity: 0.75,
+          dashArray: '4 6',
+          interactive: false
+        });
+        layer.addTo(this.map);
+        this.trailLayers.set(trail.entityId, layer);
+      } else {
+        layer.setLatLngs(latlngs);
+        layer.setStyle({ color });
+      }
+    }
+    // 移除已不存在的航迹
+    for (const [id, layer] of this.trailLayers) {
+      if (!activeTrailIds.has(id)) {
+        this.map.removeLayer(layer);
+        this.trailLayers.delete(id);
+      }
+    }
+
+    // ---- 导弹 ----
+    const activeMissileIds = new Set();
+    for (const m of missiles) {
+      if (!m || !m.id) continue;
+      activeMissileIds.add(m.id);
+      const geo = this.simToGeo(m.x, m.y);
+      const latlng = [geo.lat, geo.lng];
+      const color = colorOf(m.side);
+
+      let layer = this.missileLayers.get(m.id);
+      const icon = L.divIcon({
+        className: 'duel-missile-icon',
+        html: `<div style="transform: rotate(${90 - (m.heading || 0)}deg); font-size:14px; color:${color};
+               text-shadow:0 0 6px #000;">🚀</div>`,
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      });
+
+      if (!layer) {
+        layer = L.marker(latlng, { icon, interactive: false, zIndexOffset: 800 }).addTo(this.map);
+        this.missileLayers.set(m.id, layer);
+      } else {
+        layer.setLatLng(latlng);
+        layer.setIcon(icon);
+      }
+    }
+    for (const [id, layer] of this.missileLayers) {
+      if (!activeMissileIds.has(id)) {
+        this.map.removeLayer(layer);
+        this.missileLayers.delete(id);
+      }
+    }
+  }
+
+  /**
+   * 空战双机实时标签：与「起飞点」区分，随推演实时跟随
+   * 红方 ▲ / 蓝方 ◆，并标注机型、高度与速度
+   * @param {Array} entities - 仿真实体（duel 模式下即双方战机）
+   */
+  updateDuelAircraft(entities = []) {
+    if (!this.map) return;
+
+    const activeIds = new Set();
+    for (const e of entities) {
+      if (!e || !e.side || !this.isAirType(e)) continue;
+      activeIds.add(e.id);
+
+      const isRed = e.side === 'red';
+      const alive = (e.hp ?? 1) > 0;
+      const shape = alive ? (isRed ? '▲' : '◆') : '✖';
+      const kmh = Math.round((e.speed || 0) * 3.6);
+      const text = alive
+        ? `${shape} ${e.name || (isRed ? '红方' : '蓝方')} · ${Math.round(e.z || 0)}m · ${kmh}km/h`
+        : `${shape} ${e.name || (isRed ? '红方' : '蓝方')} 已被击落`;
+
+      const geo = this.simToGeo(e.x, e.y);
+      const latlng = [geo.lat, geo.lng];
+      const icon = L.divIcon({
+        className: 'duel-air-tag-icon',
+        html: `<div class="duel-air-tag ${isRed ? 'red' : 'blue'}${alive ? '' : ' down'}">${text}</div>`,
+        iconSize: [132, 18],
+        iconAnchor: [66, 30]
+      });
+
+      let layer = this.duelAircraftLayers.get(e.id);
+      if (!layer) {
+        layer = L.marker(latlng, { icon, interactive: false, zIndexOffset: 900 }).addTo(this.map);
+        this.duelAircraftLayers.set(e.id, layer);
+      } else {
+        layer.setLatLng(latlng);
+        layer.setIcon(icon);
+      }
+    }
+
+    for (const [id, layer] of this.duelAircraftLayers) {
+      if (!activeIds.has(id)) {
+        this.map.removeLayer(layer);
+        this.duelAircraftLayers.delete(id);
+      }
+    }
+  }
+
+  /**
+   * 清空空战相关临时图层
+   */
+  clearDuelVisuals() {
+    if (!this.map) return;
+    this.trailLayers.forEach(layer => this.map.removeLayer(layer));
+    this.trailLayers.clear();
+    this.missileLayers.forEach(layer => this.map.removeLayer(layer));
+    this.missileLayers.clear();
+    this.duelAircraftLayers.forEach(layer => this.map.removeLayer(layer));
+    this.duelAircraftLayers.clear();
   }
 
   destroy() {

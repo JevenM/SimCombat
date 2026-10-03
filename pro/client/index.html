@@ -5,15 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SimCombat Pro - 军事仿真推演系统</title>
   <link rel="stylesheet" href="css/style.css">
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Three.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Leaflet CSS（本地 vendor，离线可用） -->
+  <link rel="stylesheet" href="vendor/leaflet.css" />
+  <!-- Three.js（本地 vendor，离线可用） -->
+  <script src="vendor/three.min.js"></script>
 </head>
 <body>
-  <!-- 顶部标题栏 -->
+  <!-- ====== 顶部栏：全局共用的推演控制 / 视图切换 / 想定文件操作 / 运行状态 ====== -->
   <header class="header">
-    <h1>🎯 SimCombat Pro</h1>
+    <div class="header-brand">
+      <h1>🎯 SimCombat Pro</h1>
+      <span class="brand-sub">军事仿真推演系统</span>
+    </div>
+
     <nav class="toolbar">
       <!-- 推演控制 -->
       <div class="toolbar-group">
@@ -22,264 +26,325 @@
         <button id="btnStep" class="btn btn-toolbar" title="单步推演">⏭ 单步</button>
         <button id="btnReset" class="btn btn-toolbar" title="重置推演">🔄 重置</button>
       </div>
+
       <div class="toolbar-divider"></div>
-      <!-- 演习区域控制 -->
+
+      <!-- 视图切换与显示开关 -->
       <div class="toolbar-group">
-        <button id="btnSetArea" class="btn btn-toolbar" title="划定演习区域">📍 划定区域</button>
-        <button id="btnMoveArea" class="btn btn-toolbar" title="移动演习区域">✋ 移动区域</button>
-        <button id="btnDeleteArea" class="btn btn-toolbar" title="删除演习区域">🗑️ 删除区域</button>
+        <label class="toolbar-field" title="切换 2D 地图 / 3D 态势 / 分屏">
+          <span>视图</span>
+          <select id="viewMode" class="compact-select">
+            <option value="map2d">2D作战地图</option>
+            <option value="3d">3D态势视图</option>
+            <option value="split">分屏显示</option>
+          </select>
+        </label>
+        <div class="toolbar-checks">
+          <label class="chk" title="在地图上显示单位名称标签"><input type="checkbox" id="showLabels"> 标签</label>
+          <label class="chk" title="显示武器射程圈（短虚线）"><input type="checkbox" id="showRange"> 射程</label>
+          <label class="chk" title="显示地形叠加"><input type="checkbox" id="showTerrain"> 地形</label>
+        </div>
+      </div>
+
+      <div class="toolbar-divider"></div>
+
+      <!-- 想定文件操作（共用） -->
+      <div class="toolbar-group">
+        <button id="btnLoad" class="btn btn-toolbar" title="加载想定文件">📂 加载想定</button>
+        <button id="btnSaveScenario" class="btn btn-toolbar" title="保存当前想定">💾 保存想定</button>
+        <button id="btnClearAll" class="btn btn-toolbar btn-danger" title="清空画布上的所有单位、战机标记与演习区域">🗑️ 清空所有</button>
       </div>
     </nav>
-    <div class="connection-status disconnected" id="connection">未连接</div>
+
+    <!-- 运行状态 -->
+    <div class="header-status">
+      <div class="status-chip" title="仿真时间"><span class="chip-label">⏱ 时间</span><span id="simTime">0s</span></div>
+      <div class="status-chip red" title="红军兵力"><span class="chip-label">🔴 红军</span><span id="redUnits">0</span></div>
+      <div class="status-chip blue" title="蓝军兵力"><span class="chip-label">🔵 蓝军</span><span id="blueUnits">0</span></div>
+      <div class="status-chip" title="场上实体数量"><span class="chip-label">实体</span><span id="entityCount">0</span></div>
+      <div class="connection-status disconnected" id="connection">未连接</div>
+    </div>
   </header>
 
   <div class="main-container">
     <!-- 左侧面板切换按钮 -->
     <button id="toggleLeftPanel" class="panel-toggle left" title="收起/展开左侧面板">◀</button>
 
-    <!-- 左侧面板 -->
+    <!-- ====== 左侧面板：按模块分页（想定 / 空战 / 视图 / AI） ====== -->
     <aside class="control-panel" id="leftPanel">
-      <section class="panel-section">
-        <h3>⚙️ 推演模式</h3>
-        <div class="setting-row">
-          <label>模式选择:</label>
-          <select id="simMode">
-            <option value="exercise">演习模式</option>
-            <option value="combat">实战模式</option>
-          </select>
-        </div>
-        <div id="modeHint" class="mode-hint" style="margin-top:8px; padding:8px; background:#0d1117; border-radius:4px; font-size:11px; border-left:3px solid #f0883e;">
-          💡 演习模式：请先划定演习区域，配置兵力后再开始推演
-        </div>
-      </section>
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" data-tab="scenario" title="想定编辑与区域设置">📝 想定</button>
+        <button class="tab-btn" data-tab="air" title="空战对决">✈️ 空战</button>
+        <button class="tab-btn" data-tab="view" title="底图、离线与图例">👁️ 视图</button>
+        <button class="tab-btn" data-tab="ai" title="AI 战术配置">🤖 AI</button>
+      </div>
 
-      <section class="panel-section">
-        <h3>👁️ 视图设置</h3>
-        <div class="setting-row">
-          <label>视图模式:</label>
-          <select id="viewMode">
-            <option value="map2d">2D作战地图</option>
-            <option value="3d">3D态势视图</option>
-            <option value="split">分屏显示</option>
-          </select>
-        </div>
-        <div class="setting-row">
-          <label>底图类型:</label>
-          <select id="baseMapType">
-            <option value="offline" selected>离线网格(快速)</option>
-            <option value="standard">标准地图(在线)</option>
-            <option value="satellite">卫星影像(在线)</option>
-            <option value="terrain">地形图(在线)</option>
-          </select>
-        </div>
-        <div class="setting-row">
-          <label>地图模式:</label>
-          <label class="switch">
-            <input type="checkbox" id="offlineMode" checked>
-            <span class="slider"></span>
-          </label>
-          <span id="offlineStatus" style="font-size:11px; color:#58a6ff;">离线模式</span>
-        </div>
-        <div class="setting-row" id="cacheControls" style="display:flex;">
-          <button id="btnCacheArea" class="btn btn-small">缓存当前区域</button>
-          <button id="btnClearCache" class="btn btn-small">清理缓存</button>
-        </div>
-        <div class="setting-row" title="显示/隐藏单位名称标签">
-          <label><input type="checkbox" id="showLabels"> 显示单位名称标签</label>
-          <span class="hint-icon" title="在地图上显示单位名称标签，不影响推演">ⓘ</span>
-        </div>
-        <div class="setting-row" title="显示/隐藏武器射程圆圈">
-          <label><input type="checkbox" id="showRange"> 显示武器射程</label>
-          <span class="hint-icon" title="显示单位的攻击范围圆圈，蓝色虚线表示">ⓘ</span>
-        </div>
-        <div class="setting-row">
-          <label><input type="checkbox" id="showTerrain"> 显示地形</label>
-        </div>
-        <div class="legend" style="margin-top:10px; padding:8px; background:#0d1117; border-radius:4px; font-size:11px;">
-          <div style="margin-bottom:4px; color:#8b949e;">📍 图例:</div>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <span style="display:flex; align-items:center; gap:4px;">
-              <span style="width:12px; height:12px; border:2px dashed #ff6b6b; border-radius:50%; opacity:0.6;"></span>
-              <span>射程(短虚)</span>
-            </span>
-            <span style="display:flex; align-items:center; gap:4px;">
-              <span style="width:12px; height:12px; border:2px dashed #339af0; border-radius:50%; opacity:0.6;"></span>
-              <span>雷达(长虚)</span>
-            </span>
-            <span style="display:flex; align-items:center; gap:4px;">
-              <span style="width:12px; height:12px; border:2px solid #51cf66; border-radius:50%; opacity:0.4;"></span>
-              <span>视野(实线)</span>
-            </span>
-          </div>
-        </div>
-      </section>
+      <div class="tab-panels">
+        <!-- ---------- 模块一：想定 ---------- -->
+        <div class="tab-panel active" data-panel="scenario">
+          <section class="panel-section">
+            <h3>⚙️ 推演模式</h3>
+            <div class="setting-row">
+              <label>模式选择:</label>
+              <select id="simMode">
+                <option value="exercise">演习模式</option>
+                <option value="combat">实战模式</option>
+              </select>
+            </div>
+            <div id="modeHint" class="mode-hint">
+              💡 演习模式：请先划定演习区域，配置兵力后再开始推演
+            </div>
+          </section>
 
-      <!-- AI智能配置 -->
-      <section class="panel-section ai-config">
-        <h3>🤖 AI智能配置</h3>
-        <div class="setting-row">
-          <label>智能AI:</label>
-          <label class="switch">
-            <input type="checkbox" id="enableSmartAI" checked>
-            <span class="slider"></span>
-          </label>
-          <span id="smartAIStatus" style="font-size:11px; color:#58a6ff;">已启用</span>
-        </div>
-        <div class="setting-row">
-          <label>战术风格:</label>
-          <select id="tacticalStyle">
-            <option value="aggressive">激进进攻</option>
-            <option value="balanced" selected>平衡战术</option>
-            <option value="defensive">保守防御</option>
-          </select>
-        </div>
-        <div class="setting-row">
-          <label> AI激进程度:</label>
-          <input type="range" id="aiAggression" min="0" max="100" value="50" style="width:80px;">
-          <span id="aiAggressionValue" style="font-size:11px; min-width:30px;">50%</span>
-        </div>
-        <div class="setting-row">
-          <label>编队协同:</label>
-          <label class="switch">
-            <input type="checkbox" id="enableFormation" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div class="ai-hint" style="margin-top:8px; padding:8px; background:#0d1117; border-radius:4px; font-size:10px; color:#8b949e; border-left:3px solid #58a6ff;">
-          <div id="aiHintText">💡 智能AI启用：单位将自动选择最佳目标、利用地形、协同攻击</div>
-        </div>
-      </section>
+          <section class="panel-section">
+            <h3>🗺️ 演习区域</h3>
+            <div class="btn-group">
+              <button id="btnSetArea" class="btn btn-danger btn-small" title="划定演习区域（在地图上按住右键拖拽）">📍 划定区域</button>
+              <button id="btnMoveArea" class="btn btn-secondary btn-small" title="移动演习区域">✋ 移动区域</button>
+            </div>
+            <div class="btn-group">
+              <button id="btnResetArea" class="btn btn-secondary btn-small" title="恢复默认演习区域">↺ 重置区域</button>
+              <button id="btnDeleteArea" class="btn btn-secondary btn-small" title="删除演习区域">🗑️ 删除区域</button>
+            </div>
+            <div class="editor-hint">💡 点击「划定区域」后在地图上按住鼠标右键拖拽框选</div>
+          </section>
 
-      <!-- 想定编辑器 -->
-      <section class="panel-section scenario-editor">
-        <h3>📝 想定编辑器</h3>
-        <div class="editor-mode">
-          <label>编辑模式:</label>
-          <select id="editorMode">
-            <option value="view">仅查看</option>
-            <option value="addRed">添加红军</option>
-            <option value="addBlue">添加蓝军</option>
-            <option value="remove">删除单位</option>
-            <option value="move">移动单位</option>
-            <option value="setPath">设置路径</option>
-          </select>
-        </div>
-        <div class="unit-selector" id="unitSelector" style="display:none">
-          <label>选择单位:</label>
-          <select id="unitType">
-            <optgroup label="地面单位">
-              <option value="infantry">🪖 步兵班</option>
-              <option value="tank">🛡️ 99A主战坦克</option>
-              <option value="apc">🚛 ZBL-08装甲车</option>
-              <option value="artillery">💥 PLZ-05自行火炮</option>
-              <option value="mlrs">🚀 PHL-03火箭炮</option>
-              <option value="air_defense">🎯 HQ-16防空导弹</option>
-              <option value="command">📻 指挥车</option>
-              <option value="jamming">📡 电子对抗车</option>
-            </optgroup>
-            <optgroup label="空中单位">
-              <option value="fighter">✈️ 歼-20战斗机</option>
-              <option value="bomber">🚀 轰-6K轰炸机</option>
-              <option value="helicopter">🚁 武直-10</option>
-              <option value="uav">📡 攻击-2无人机</option>
-              <option value="awacs">📡 空警-500预警机</option>
-            </optgroup>
-            <optgroup label="海上单位">
-              <option value="destroyer">🚢 055型驱逐舰</option>
-              <option value="frigate">⚓ 054A型护卫舰</option>
-              <option value="submarine">🔱 093型核潜艇</option>
-              <option value="carrier">🛳️ 辽宁舰航母</option>
-              <option value="landing_ship">⛴️ 071型两栖舰</option>
-            </optgroup>
-          </select>
-        </div>
-        <div class="editor-actions">
-          <button id="btnClearAll" class="btn btn-danger btn-small">🗑️ 清空所有</button>
-          <button id="btnSaveScenario" class="btn btn-secondary btn-small">💾 保存想定</button>
-        </div>
-        <div class="editor-hint" id="editorHint">
-          💡 选择"添加红军/蓝军"后点击地图放置单位
-        </div>
-      </section>
+          <section class="panel-section scenario-editor">
+            <h3>📝 想定编辑器</h3>
+            <div class="editor-mode">
+              <label>编辑模式:</label>
+              <select id="editorMode">
+                <option value="view">仅查看</option>
+                <option value="addRed">添加红军</option>
+                <option value="addBlue">添加蓝军</option>
+                <option value="remove">删除单位</option>
+                <option value="move">移动单位</option>
+                <option value="setPath">设置路径</option>
+              </select>
+            </div>
+            <div class="unit-selector" id="unitSelector" style="display:none">
+              <label>选择单位:</label>
+              <select id="unitType">
+                <optgroup label="地面单位">
+                  <option value="infantry">🪖 步兵班</option>
+                  <option value="tank">🛡️ 99A主战坦克</option>
+                  <option value="apc">🚛 ZBL-08装甲车</option>
+                  <option value="artillery">💥 PLZ-05自行火炮</option>
+                  <option value="mlrs">🚀 PHL-03火箭炮</option>
+                  <option value="air_defense">🎯 HQ-16防空导弹</option>
+                  <option value="command">📻 指挥车</option>
+                  <option value="jamming">📡 电子对抗车</option>
+                </optgroup>
+                <optgroup label="空中单位">
+                  <option value="fighter">✈️ 歼-20战斗机</option>
+                  <option value="bomber">🚀 轰-6K轰炸机</option>
+                  <option value="helicopter">🚁 武直-10</option>
+                  <option value="uav">📡 攻击-2无人机</option>
+                  <option value="awacs">📡 空警-500预警机</option>
+                </optgroup>
+                <optgroup label="海上单位">
+                  <option value="destroyer">🚢 055型驱逐舰</option>
+                  <option value="frigate">⚓ 054A型护卫舰</option>
+                  <option value="submarine">🔱 093型核潜艇</option>
+                  <option value="carrier">🛳️ 辽宁舰航母</option>
+                  <option value="landing_ship">⛴️ 071型两栖舰</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="editor-hint" id="editorHint">
+              💡 选择"添加红军/蓝军"后点击地图放置单位
+            </div>
+          </section>
 
-      <section class="panel-section">
-        <h3>📁 数据操作</h3>
-        <div class="btn-group">
-          <button id="btnLoad" class="btn btn-secondary">📂 加载想定</button>
-        </div>
-        <input type="file" id="fileInput" style="display:none" accept=".json">
-      </section>
+          <section class="panel-section preset-scenarios">
+            <h3>🎯 预设想定</h3>
+            <select id="presetScenario">
+              <option value="">-- 选择预设想定 --</option>
+              <option value="skirmish">遭遇战（近距离）</option>
+              <option value="urban">城市巷战（近距离）</option>
+              <option value="assault">进攻作战（中距离）</option>
+              <option value="combined">联合作战（多兵种）</option>
+              <option value="firepower">火力打击（炮兵支援）</option>
+              <option value="asymmetric">非对称作战（游击战）</option>
+            </select>
+            <button id="btnLoadPreset" class="btn btn-secondary" style="margin-top:8px; width:100%">📥 加载预设想定</button>
+          </section>
 
-      <section class="panel-section">
-        <h3>📹 推演回放</h3>
-        <div class="setting-row">
-          <label>当前回放:</label>
-          <select id="savedReplays">
-            <option value="">-- 选择已保存回放 --</option>
-          </select>
+          <input type="file" id="fileInput" style="display:none" accept=".json">
         </div>
-        <div class="btn-group">
-          <button id="btnSaveReplay" class="btn btn-secondary" title="保存当前推演为回放">💾 保存</button>
-          <button id="btnLoadReplay" class="btn btn-info" title="加载选定回放">📂 读取并播放</button>
-        </div>
-        <div id="replayInfo" style="margin-top:8px; padding:6px; background:#0d1117; border-radius:4px; font-size:11px; color:#8b949e; display:none;">
-        </div>
-      </section>
 
-      <section class="panel-section">
-        <h3>📈 实时统计</h3>
-        <div class="stats-grid">
-          <div class="stat-box red">
-            <label>红军兵力</label>
-            <span id="redUnits">0</span>
-          </div>
-          <div class="stat-box blue">
-            <label>蓝军兵力</label>
-            <span id="blueUnits">0</span>
-          </div>
-          <div class="stat-box">
-            <label>仿真时间</label>
-            <span id="simTime">0s</span>
-          </div>
-          <div class="stat-box">
-            <label>实体数量</label>
-            <span id="entityCount">0</span>
-          </div>
-        </div>
-        <div class="btn-group" style="margin-top:12px">
-          <button id="btnViewRed" class="btn btn-danger" style="flex:1">🔴 查看红方位置</button>
-          <button id="btnViewBlue" class="btn btn-primary" style="flex:1">🔵 查看蓝方位置</button>
-        </div>
-      </section>
+        <!-- ---------- 模块二：空战对决 ---------- -->
+        <div class="tab-panel" data-panel="air">
+          <section class="panel-section air-duel">
+            <h3>✈️ 空战对决</h3>
 
-      <section class="panel-section">
-        <h3>📋 单位实时状态</h3>
-        <div id="selectedEntity">
-          <p class="no-selection">💡 点击地图上的单位查看实时作战动作<br/>包括发现目标、攻击状态、移动方向等</p>
-        </div>
-      </section>
+            <div class="setting-row">
+              <label>🔴 红方机型:</label>
+              <select id="duelRedType" class="duel-select side-red">
+                <option value="fighter" selected>🔺 歼-20 隐身型（高速隐身）</option>
+                <option value="fighter_heavy">🔻 歼-16 重型（载弹量大）</option>
+                <option value="fighter_light">🔸 歼-10C 轻型（极致灵活）</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label>🔵 蓝方机型:</label>
+              <select id="duelBlueType" class="duel-select side-blue">
+                <option value="fighter">🔺 歼-20 隐身型（高速隐身）</option>
+                <option value="fighter_heavy" selected>🔻 歼-16 重型（载弹量大）</option>
+                <option value="fighter_light">🔸 歼-10C 轻型（极致灵活）</option>
+              </select>
+            </div>
+            <div class="duel-legend">
+              <span class="legend-item red">▲ 红方</span>
+              <span class="legend-item blue">◆ 蓝方</span>
+              <span class="legend-item spawn">⚑ 起飞点</span>
+            </div>
+            <div class="setting-row">
+              <label>初始高度:</label>
+              <select id="duelAltitude">
+                <option value="3000">3000 米</option>
+                <option value="5000" selected>5000 米</option>
+                <option value="7000">7000 米</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label>空战风格:</label>
+              <select id="duelStyle">
+                <option value="balanced" selected>⚖️ 均衡</option>
+                <option value="aggressive">🔥 激进</option>
+                <option value="defensive">🛡️ 保守</option>
+              </select>
+            </div>
 
-      <section class="panel-section">
-        <h3>🎯 预设想定</h3>
-        <div class="preset-scenarios">
-          <select id="presetScenario">
-            <option value="">-- 选择预设想定 --</option>
-            <option value="skirmish">遭遇战（近距离）</option>
-            <option value="urban">城市巷战（近距离）</option>
-            <option value="assault">进攻作战（中距离）</option>
-            <option value="combined">联合作战（多兵种）</option>
-            <option value="firepower">火力打击（炮兵支援）</option>
-            <option value="asymmetric">非对称作战（游击战）</option>
-          </select>
-          <button id="btnLoadPreset" class="btn btn-secondary" style="margin-top:8px; width:100%">📥 加载预设想定</button>
-        </div>
-      </section>
+            <div class="btn-group">
+              <button id="btnPickRed" class="btn btn-danger btn-small" style="flex:1">📍 点选红方</button>
+              <button id="btnPickBlue" class="btn btn-primary btn-small" style="flex:1">📍 点选蓝方</button>
+            </div>
+            <div class="btn-group">
+              <button id="btnAutoDeploy" class="btn btn-secondary btn-small" style="flex:1">🎯 对称自动布置</button>
+              <button id="btnStartDuel" class="btn btn-success btn-small" style="flex:1">⚔️ 开始格斗</button>
+            </div>
+            <div class="btn-group">
+              <button id="btnStopDuel" class="btn btn-secondary btn-small" style="flex:1">⏹ 结束对决</button>
+              <button id="btnFollowDuel" class="btn btn-secondary btn-small" style="flex:1">🎥 双机跟随</button>
+            </div>
 
-      <section class="panel-section">
-        <h3>📜 推演日志</h3>
-        <div id="logPanel" class="log-panel"></div>
-        <button id="btnExportLogs" class="btn btn-secondary btn-small" style="margin-top:8px;width:100%">📥 导出日志</button>
-      </section>
+            <div class="editor-hint" id="duelHint">
+              💡 点选双方出身位置后开始格斗，或直接「对称自动布置」
+            </div>
+
+            <!-- 对决态势条 -->
+            <div id="duelStatus" class="duel-status" style="display:none">
+              <div class="duel-row">
+                <span class="duel-side red" id="duelRedName">🔴 红方</span>
+                <span class="duel-side blue" id="duelBlueName">🔵 蓝方</span>
+              </div>
+              <div class="duel-bar-wrap">
+                <div class="duel-bar"><div class="duel-bar-fill red" id="duelRedHp" style="width:100%"></div></div>
+                <div class="duel-bar"><div class="duel-bar-fill blue" id="duelBlueHp" style="width:100%"></div></div>
+              </div>
+              <div class="duel-row">
+                <span class="duel-meta" id="duelRedMeta">--</span>
+                <span class="duel-meta" id="duelBlueMeta">--</span>
+              </div>
+              <div class="duel-row">
+                <span class="duel-maneuver" id="duelRedManeuver">待战</span>
+                <span class="duel-maneuver" id="duelBlueManeuver">待战</span>
+              </div>
+              <div class="duel-center">
+                <span id="duelDistance">距离 --</span>
+                <span id="duelTime">⏱ 0s</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ---------- 模块三：视图 ---------- -->
+        <div class="tab-panel" data-panel="view">
+          <section class="panel-section">
+            <h3>🗺️ 底图与离线</h3>
+            <div class="setting-row">
+              <label>底图类型:</label>
+              <select id="baseMapType">
+                <option value="offline" selected>离线网格(快速)</option>
+                <option value="standard">标准地图(在线)</option>
+                <option value="satellite">卫星影像(在线)</option>
+                <option value="terrain">地形图(在线)</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label>离线模式:</label>
+              <label class="switch">
+                <input type="checkbox" id="offlineMode" checked>
+                <span class="slider"></span>
+              </label>
+              <span id="offlineStatus" style="font-size:11px; color:#58a6ff;">离线模式</span>
+            </div>
+            <div class="setting-row" id="cacheControls">
+              <button id="btnCacheArea" class="btn btn-small">缓存当前区域</button>
+              <button id="btnClearCache" class="btn btn-small">清理缓存</button>
+            </div>
+            <div class="editor-hint">💡 在线底图加载失败时会自动切换为离线网格底图</div>
+          </section>
+
+          <section class="panel-section">
+            <h3>📍 图例</h3>
+            <div class="legend">
+              <div class="legend-title">单位与范围</div>
+              <div class="legend-items">
+                <span class="legend-item"><i class="lg lg-range"></i>射程(短虚)</span>
+                <span class="legend-item"><i class="lg lg-radar"></i>雷达(长虚)</span>
+                <span class="legend-item"><i class="lg lg-vision"></i>视野(实线)</span>
+              </div>
+              <div class="legend-title">空战对决</div>
+              <div class="legend-items">
+                <span class="legend-item red">▲ 红方战机</span>
+                <span class="legend-item blue">◆ 蓝方战机</span>
+                <span class="legend-item spawn">⚑ 起飞点</span>
+                <span class="legend-item">🚀 在飞导弹</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ---------- 模块四：AI ---------- -->
+        <div class="tab-panel" data-panel="ai">
+          <section class="panel-section ai-config">
+            <h3>🤖 AI智能配置</h3>
+            <div class="setting-row">
+              <label>智能AI:</label>
+              <label class="switch">
+                <input type="checkbox" id="enableSmartAI" checked>
+                <span class="slider"></span>
+              </label>
+              <span id="smartAIStatus" style="font-size:11px; color:#58a6ff;">已启用</span>
+            </div>
+            <div class="setting-row">
+              <label>战术风格:</label>
+              <select id="tacticalStyle">
+                <option value="aggressive">激进进攻</option>
+                <option value="balanced" selected>平衡战术</option>
+                <option value="defensive">保守防御</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label> AI激进程度:</label>
+              <input type="range" id="aiAggression" min="0" max="100" value="50" style="width:80px;">
+              <span id="aiAggressionValue" style="font-size:11px; min-width:30px;">50%</span>
+            </div>
+            <div class="setting-row">
+              <label>编队协同:</label>
+              <label class="switch">
+                <input type="checkbox" id="enableFormation" checked>
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div class="ai-hint">
+              <div id="aiHintText">💡 智能AI启用：单位将自动选择最佳目标、利用地形、协同攻击</div>
+            </div>
+          </section>
+        </div>
+      </div>
     </aside>
 
     <!-- 主视图区 -->
@@ -316,91 +381,148 @@
     <!-- 右侧面板切换按钮 -->
     <button id="toggleRightPanel" class="panel-toggle right" title="收起/展开右侧面板">▶</button>
 
-    <!-- 右侧统计大屏 -->
+    <!-- ====== 右侧面板：态势监视（单位状态 / 战损统计 / 回放 / 日志） ====== -->
     <aside class="stats-panel" id="rightPanel">
-      <h3>📊 战损统计大屏</h3>
-
-      <div class="stats-card">
-        <h4>⚔️ 兵力损失对比</h4>
-        <div class="casualty-bar">
-          <div class="bar-segment red" id="redCasualtyBar" style="width:50%"></div>
-          <div class="bar-segment blue" id="blueCasualtyBar" style="width:50%"></div>
+      <section class="panel-section">
+        <h3>📋 单位实时状态</h3>
+        <div id="selectedEntity">
+          <p class="no-selection">💡 点击地图上的单位查看实时作战动作<br/>包括发现目标、攻击状态、移动方向等</p>
         </div>
-        <div class="casualty-numbers">
-          <span class="red">红: <b id="redCasualties">0</b></span>
-          <span class="blue">蓝: <b id="blueCasualties">0</b></span>
-        </div>
-      </div>
+      </section>
 
-      <div class="stats-card">
-        <h4>💥 伤害输出统计</h4>
-        <div class="damage-stats">
-          <div class="damage-row red">
-            <span>红军伤害:</span>
-            <span id="redDamage" class="value">0</span>
+      <section class="panel-section">
+        <h3>🔭 视角跳转</h3>
+        <div class="btn-group">
+          <button id="btnViewRed" class="btn btn-danger" style="flex:1">🔴 红方位置</button>
+          <button id="btnViewBlue" class="btn btn-primary" style="flex:1">🔵 蓝方位置</button>
+        </div>
+      </section>
+
+      <section class="panel-section">
+        <h3>📊 战损统计</h3>
+
+        <div class="stats-card">
+          <h4>⚔️ 兵力损失对比</h4>
+          <div class="casualty-bar">
+            <div class="bar-segment red" id="redCasualtyBar" style="width:50%"></div>
+            <div class="bar-segment blue" id="blueCasualtyBar" style="width:50%"></div>
           </div>
-          <div class="damage-row blue">
-            <span>蓝军伤害:</span>
-            <span id="blueDamage" class="value">0</span>
+          <div class="casualty-numbers">
+            <span class="red">红: <b id="redCasualties">0</b></span>
+            <span class="blue">蓝: <b id="blueCasualties">0</b></span>
           </div>
         </div>
-        <canvas id="damageChart" width="250" height="60"></canvas>
-      </div>
 
-      <div class="stats-card">
-        <h4>💰 战力价值</h4>
-        <div class="value-chart">
-          <div class="value-progress">
-            <div class="progress-label red">红军 <span id="redValue">0</span></div>
-            <div class="progress-bar">
-              <div id="redValueBar" style="width:50%"></div>
+        <div class="stats-card">
+          <h4>💥 伤害输出统计</h4>
+          <div class="damage-stats">
+            <div class="damage-row red">
+              <span>红军伤害:</span>
+              <span id="redDamage" class="value">0</span>
+            </div>
+            <div class="damage-row blue">
+              <span>蓝军伤害:</span>
+              <span id="blueDamage" class="value">0</span>
             </div>
           </div>
-          <div class="value-progress">
-            <div class="progress-label blue">蓝军 <span id="blueValue">0</span></div>
-            <div class="progress-bar">
-              <div id="blueValueBar" style="width:50%"></div>
+          <canvas id="damageChart" width="250" height="60"></canvas>
+        </div>
+
+        <div class="stats-card">
+          <h4>💰 战力价值</h4>
+          <div class="value-chart">
+            <div class="value-progress">
+              <div class="progress-label red">红军 <span id="redValue">0</span></div>
+              <div class="progress-bar">
+                <div id="redValueBar" style="width:50%"></div>
+              </div>
+            </div>
+            <div class="value-progress">
+              <div class="progress-label blue">蓝军 <span id="blueValue">0</span></div>
+              <div class="progress-bar">
+                <div id="blueValueBar" style="width:50%"></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="stats-card">
-        <h4>🎯 实时态势</h4>
-        <div class="battle-status">
-          <div class="status-row">
-            <span class="label">推演状态:</span>
-            <span id="statusText" class="badge stopped">待机</span>
-          </div>
-          <div class="status-row">
-            <span class="label">交火次数:</span>
-            <span id="engagementCount" class="value">0</span>
-          </div>
-          <div class="status-row">
-            <span class="label">战术主导:</span>
-            <span id="dominantSide" class="value">均势</span>
+        <div class="stats-card">
+          <h4>🎯 实时态势</h4>
+          <div class="battle-status">
+            <div class="status-row">
+              <span class="label">推演状态:</span>
+              <span id="statusText" class="badge stopped">待机</span>
+            </div>
+            <div class="status-row">
+              <span class="label">交火次数:</span>
+              <span id="engagementCount" class="value">0</span>
+            </div>
+            <div class="status-row">
+              <span class="label">战术主导:</span>
+              <span id="dominantSide" class="value">均势</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="stats-card">
-        <h4>🏆 推演结论</h4>
-        <div id="conclusion" class="conclusion">
-          <p class="pending">推演准备就绪</p>
+        <div class="stats-card">
+          <h4>🏆 推演结论</h4>
+          <div id="conclusion" class="conclusion">
+            <p class="pending">推演准备就绪</p>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section class="panel-section">
+        <h3>📹 推演回放</h3>
+        <div class="setting-row">
+          <label>当前回放:</label>
+          <select id="savedReplays">
+            <option value="">-- 选择已保存回放 --</option>
+          </select>
+        </div>
+        <div class="btn-group">
+          <button id="btnSaveReplay" class="btn btn-secondary" title="保存当前推演为回放">💾 保存</button>
+          <button id="btnLoadReplay" class="btn btn-info" title="加载选定回放">📂 读取并播放</button>
+        </div>
+        <div id="replayInfo" style="margin-top:8px; padding:6px; background:#0d1117; border-radius:4px; font-size:11px; color:#8b949e; display:none;"></div>
+      </section>
+
+      <section class="panel-section">
+        <h3>📜 推演日志</h3>
+        <div id="logPanel" class="log-panel"></div>
+        <button id="btnExportLogs" class="btn btn-secondary btn-small" style="margin-top:8px;width:100%">📥 导出日志</button>
+      </section>
     </aside>
   </div>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <!-- Leaflet Polyline Decorator for arrows -->
-  <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+  <!-- Leaflet JS（本地 vendor） -->
+  <script src="vendor/leaflet.js"></script>
+  <!-- Leaflet Polyline Decorator for arrows（本地 vendor） -->
+  <script src="vendor/leaflet.polylineDecorator.js"></script>
+  <!-- 依赖兜底：本地 vendor 缺失时回退 CDN -->
+  <script>
+    (function () {
+      var fallbacks = [
+        ['L', 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'],
+        ['THREE', 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'],
+        ['L.PolylineDecorator', 'https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js']
+      ];
+      fallbacks.forEach(function (item) {
+        var key = item[0];
+        var exists = key.split('.').reduce(function (o, k) { return o && o[k]; }, window);
+        if (!exists) {
+          console.warn('[SimCombat] 本地依赖缺失，回退 CDN: ' + key);
+          document.write('<script src="' + item[1] + '"><\/script>');
+        }
+      });
+    })();
+  </script>
   <!-- 攻击动画 -->
   <script src="js/AttackAnimations.js"></script>
   <!-- 主程序 -->
   <script src="js/Map2D.js"></script>
   <script src="js/View3D.js"></script>
+  <script src="js/AirDuel.js"></script>
   <script src="js/StatsPanel.js"></script>
   <script src="js/main.js"></script>
 </body>

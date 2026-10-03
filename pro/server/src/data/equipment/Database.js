@@ -155,6 +155,52 @@ const EquipmentDatabase = {
     fuel: 3600,
     fuelConsumption: 1
   },
+  fighter_heavy: {
+    name: '歼-16重型战机',
+    type: 'air',
+    mobility: 'flight',
+    hp: 190,
+    maxHp: 190,
+    speed: 2100, // km/h
+    range: 1500, // 航炮有效射程
+    damage: 90, // 30mm航炮
+    fireRate: 6,
+    accuracy: 0.82,
+    evasion: 0.45, // 机体较大，瞬时机动略逊
+    armor: 0.05,
+    detection: 260,
+    signature: 0.55, // 非隐身
+    height: 5000,
+    weapons: ['cannon', 'aam', 'agm'],
+    vision: 3000,
+    cost: 900,
+    maxAltitude: 18000,
+    fuel: 4200,
+    fuelConsumption: 1
+  },
+  fighter_light: {
+    name: '歼-10C轻型战机',
+    type: 'air',
+    mobility: 'flight',
+    hp: 130,
+    maxHp: 130,
+    speed: 1900, // km/h
+    range: 1500,
+    damage: 75,
+    fireRate: 6,
+    accuracy: 0.86,
+    evasion: 0.7, // 高敏捷机型
+    armor: 0,
+    detection: 220,
+    signature: 0.45,
+    height: 5000,
+    weapons: ['cannon', 'aam'],
+    vision: 2500,
+    cost: 600,
+    maxAltitude: 17000,
+    fuel: 3000,
+    fuelConsumption: 1
+  },
   bomber: {
     name: '轰-6K轰炸机',
     type: 'air',
@@ -442,11 +488,72 @@ const EquipmentDatabase = {
   }
 };
 
+/**
+ * 空战（BFM）参数表
+ * 仅在「空战对决」模式下由 FlightModel / MissileSystem / AirCombatAI 使用
+ * - cannon: 航炮（射程 m、单发伤害、射速 发/s、精度、射击锥半角 度）
+ * - missile: 空空导弹（挂载数、最大射程、最小发射距离、飞行速度 m/s、
+ *            伤害、基础命中率、续航秒、近炸引信半径、锁定耗时、装填间隔）
+ * - turnRateDegPerSec / maxG: 最大稳定转弯率与过载
+ * - climbRate: 最大爬升率 m/s
+ * - minSpeedMs / maxSpeedMs: 失速下限与极速上限 m/s
+ * - flares: 红外干扰弹数量
+ */
+const AIR_COMBAT_PROFILES = {
+  fighter: {
+    cannon: { range: 1500, damage: 80, fireRate: 6, accuracy: 0.8, coneDeg: 10 },
+    missile: { count: 4, range: 8000, launchMin: 600, speed: 1100, damage: 130,
+               hitProb: 0.78, lifeSec: 14, proxyFuze: 45, lockSec: 1.5, reloadSec: 3 },
+    turnRateDegPerSec: 30, maxG: 9, climbRate: 200,
+    minSpeedMs: 130, maxSpeedMs: 610, flares: 16
+  },
+  fighter_heavy: {
+    cannon: { range: 1500, damage: 90, fireRate: 6, accuracy: 0.82, coneDeg: 10 },
+    missile: { count: 6, range: 9000, launchMin: 600, speed: 1150, damage: 140,
+               hitProb: 0.8, lifeSec: 15, proxyFuze: 50, lockSec: 1.5, reloadSec: 3 },
+    turnRateDegPerSec: 24, maxG: 8, climbRate: 180,
+    minSpeedMs: 150, maxSpeedMs: 583, flares: 20
+  },
+  fighter_light: {
+    cannon: { range: 1500, damage: 75, fireRate: 6, accuracy: 0.86, coneDeg: 9 },
+    missile: { count: 2, range: 6500, launchMin: 500, speed: 1050, damage: 120,
+               hitProb: 0.74, lifeSec: 12, proxyFuze: 40, lockSec: 1.2, reloadSec: 2.5 },
+    turnRateDegPerSec: 36, maxG: 10, climbRate: 220,
+    minSpeedMs: 110, maxSpeedMs: 528, flares: 12
+  }
+};
+
+// 未单独配置机型的空中单位使用的通用参数
+const DEFAULT_AIR_COMBAT = {
+  cannon: { range: 800, damage: 40, fireRate: 3, accuracy: 0.6, coneDeg: 12 },
+  missile: { count: 0, range: 0, launchMin: 0, speed: 800, damage: 0,
+             hitProb: 0, lifeSec: 0, proxyFuze: 0, lockSec: 0, reloadSec: 0 },
+  turnRateDegPerSec: 12, maxG: 4, climbRate: 60,
+  minSpeedMs: 60, maxSpeedMs: 250, flares: 0
+};
+
+// 为所有空中单位挂载空战参数
+for (const [key, data] of Object.entries(EquipmentDatabase)) {
+  if (data.type === 'air') {
+    data.airCombat = AIR_COMBAT_PROFILES[key] || DEFAULT_AIR_COMBAT;
+  }
+}
+
 // 获取装备数据
 function getEquipment(type) {
   const base = EquipmentDatabase[type];
   if (!base) return null;
-  return { ...base, type };
+  // category 保留原始兵种类别（air/ground/naval），避免被装备键名覆盖后无法区分
+  return { ...base, type, category: base.type };
+}
+
+/**
+ * 判断实体是否属于空中单位
+ * 注意：entity.type 会被装备键名（如 fighter）覆盖，必须统一使用 category 判定
+ */
+function isAirEntity(entity) {
+  if (!entity) return false;
+  return entity.category === 'air' || entity.mobilityType === 'flight';
 }
 
 // 装备克制关系（基于真实战术）
@@ -484,6 +591,8 @@ const EquipmentDescriptions = {
   air_defense: '中程防空导弹系统，射程40km，可拦截各类空中目标',
   mlrs: '300mm多管火箭炮，射程40-70km，用于面积压制',
   fighter: '第五代隐身战斗机，具备超音速巡航和先进航电系统',
+  fighter_heavy: '双发重型战斗机，载弹量大、航程远，适合中距拦截',
+  fighter_light: '单发高敏捷战斗机，瞬时盘旋能力强，适合近距缠斗',
   helicopter: '专用武装直升机，装备空地导弹和机关炮',
   uav: '察打一体无人机，可长时间巡航并执行精确打击',
   destroyer: '万吨级驱逐舰，装备相控阵雷达和垂直发射系统',
@@ -495,5 +604,8 @@ module.exports = {
   getEquipment,
   EquipmentCounters,
   getDamageModifier,
-  EquipmentDescriptions
+  EquipmentDescriptions,
+  AIR_COMBAT_PROFILES,
+  DEFAULT_AIR_COMBAT,
+  isAirEntity
 };

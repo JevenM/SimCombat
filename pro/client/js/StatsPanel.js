@@ -217,52 +217,13 @@ class StatsPanel {
       }
     }
 
+    // 结果文案写入右侧「推演结论」卡片；结束弹窗统一由 main.js 的 showEndGameDialog 负责
     conclusionEl.innerHTML = `<p class="result ${className}">${result}</p>`;
-
-    // 显示结束弹窗
-    this.showEndGameModal(result, className);
-  }
-
-  showEndGameModal(result, className) {
-    // 检查是否已经显示过弹窗
-    if (this.endGameModalShown) return;
-    this.endGameModalShown = true;
-
-    const modal = document.createElement('div');
-    modal.className = 'endgame-modal';
-    modal.innerHTML = `
-      <div class="endgame-overlay"></div>
-      <div class="endgame-content">
-        <h2>🎯 推演结束</h2>
-        <div class="endgame-result ${className}">${result}</div>
-        <div class="endgame-actions">
-          <button id="btnSaveReplay" class="btn btn-primary">💾 保存回放</button>
-          <button id="btnCloseModal" class="btn btn-secondary">关闭</button>
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // 绑定按钮事件
-    modal.querySelector('#btnSaveReplay').addEventListener('click', () => {
-      // 自动生成名称并保存到服务器
-      const now = new Date();
-      const name = `推演_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}_${now.getHours().toString().padStart(2,'0')}${now.getMinutes().toString().padStart(2,'0')}`;
-      window.app.send({ cmd: 'saveReplay', name });
-      window.app.addLog(`正在保存回放: ${name}`, 'success');
-      modal.remove();
-    });
-
-    modal.querySelector('#btnCloseModal').addEventListener('click', () => {
-      modal.remove();
-    });
   }
 
   reset() {
     this.damageHistory = { red: [], blue: [] };
     this.engagementCount = 0;
     this.processedEvents.clear(); // 清空已处理事件记录
-    this.endGameModalShown = false;
   }
 }

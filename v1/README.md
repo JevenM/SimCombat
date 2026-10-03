@@ -1,5 +1,7 @@
 SimCombat MVP
 
+老版本，新版本在d:\Git\SimCombat\pro下
+
 netstat -ano | findstr :3001
 tasklist | findstr 16892
 taskkill /F /PID 16892

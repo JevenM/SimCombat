@@ -162,6 +162,37 @@ function handleCommand(ws, data) {
       }
       break;
 
+    // ====== 空战对决 ======
+    case 'startDuel':
+      try {
+        const state = sim.startDuel(data.config || {});
+        console.log('空战对决已开始:', JSON.stringify(data.config || {}).slice(0, 200));
+        broadcastState();
+        // 自动开始推演
+        if (!sim.isRunning) sim.start(() => broadcastState());
+      } catch (err) {
+        console.error('Start duel error:', err);
+        ws.send(JSON.stringify({ type: 'error', message: err.message }));
+      }
+      break;
+
+    case 'stopDuel':
+      sim.stop();
+      sim.resetDuel();
+      sim.blackboard.combatEvents = [];
+      broadcastState();
+      console.log('空战对决已结束/重置');
+      break;
+
+    case 'setDuelStyle':
+      if (data.style) {
+        sim.airCombat.setStyle(data.style);
+        sim.aiStyle = data.style;
+        broadcastState();
+        console.log('空战AI风格:', data.style);
+      }
+      break;
+
     case 'createEntity':
       if (data.config) {
         try {
@@ -484,6 +515,7 @@ function handleCommand(ws, data) {
       sim.entityBehaviors.clear();
       sim.time = 0;
       sim.stepCount = 0;
+      sim.resetDuel();
       // 清空战斗事件，避免在清除时产生击杀特效
       sim.blackboard.combatEvents = [];
       sim.stats = {
