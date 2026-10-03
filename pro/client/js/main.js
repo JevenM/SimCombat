@@ -13,6 +13,7 @@ class SimCombatApp {
     this.map2d = null;
     this.view3d = null;
     this.statsPanel = null;
+    this.equipmentPanel = null;
 
     // 回放状态
     this.replayInterval = null;
@@ -29,6 +30,9 @@ class SimCombatApp {
     this.view3d = new View3D('view3d');
     this.view3d.setVisible(false); // 默认隐藏3D视图
     this.statsPanel = new StatsPanel();
+    if (typeof EquipmentPanel !== 'undefined') {
+      this.equipmentPanel = new EquipmentPanel(this);
+    }
 
     // 演习模式默认不显示演习区域
     this.simMode = 'exercise';
@@ -51,6 +55,7 @@ class SimCombatApp {
 
     // 绑定事件
     this.bindEvents();
+    this.initRLControls();
 
     // 连接WebSocket
     this.connect();
@@ -69,8 +74,10 @@ class SimCombatApp {
       this.updateConnectionStatus('connected');
       this.addLog('已连接到服务器', 'success');
 
-      // 连接成功后请求回放列表
+      // 连接成功后请求回放列表、装备库与 RL 策略状态
       this.refreshReplayList();
+      this.equipmentPanel?.load();
+      this.refreshRLStatus();
 
       // 根据当前模式初始化状态
       if (this.simMode === 'exercise') {
@@ -128,6 +135,18 @@ class SimCombatApp {
       case 'entityDetails':
         this.showEntityDetails(data.details);
         break;
+      case 'equipment':
+        this.equipmentPanel?.setDatabase(data);
+        this.refreshEquipmentOptions(data.database, data.custom);
+        break;
+      case 'rlStatus':
+        this.updateRLStatus(data.status);
+        break;
+      case 'rlTrained': {
+        const s = data.stats || {};
+        this.addLog(`RL 训练完成：${s.episodes} 回合，Q 状态 ${s.states} 个，平均 ${s.avgSteps} 步，耗时 ${s.durationSec}s`, 'success');
+        break;
+      }
       case 'commandResult':
         if (data.success) {
           const cmdNames = { move: '移动', attack: '攻击', hold: '部署' };
@@ -135,6 +154,130 @@ class SimCombatApp {
         }
         break;
     }
+  }
+
+  /**
+   * 装备库发生变化时，同步刷新所有机型下拉（想定编辑器 + 空战对决）
+   * @param {Object} database - 服务端装备库 { key: {...} }
+   * @param {string[]} custom - 自定义机型键名
+   */
+  refreshEquipmentOptions(database, custom = []) {
+    if (!database) return;
+
+    const icons = {
+      infantry: '🪖', tank: '🛡️', apc: '🚛', artillery: '💥', mlrs: '🚀',
+      air_defense: '🎯', command: '📻', jamming: '📡', radar: '📡', sam: '🎯',
+      fighter: '✈️', fighter_heavy: '✈️', fighter_light: '✈️', bomber: '🚀',
+      helicopter: '🚁', uav: '📡', awacs: '📡',
+      destroyer: '🚢', frigate: '⚓', submarine: '🔱', carrier: '🛳️', landing_ship: '⛴️'
+    };
+    const groupLabels = { ground: '地面单位', air: '空中单位', naval: '海上单位' };
+    const entries = Object.entries(database);
+
+    // 想定编辑器的单位下拉（保留分组结构）
+    const unitSelect = document.getElementById('unitType');
+    if (unitSelect) {
+      const prev = unitSelect.value;
+      unitSelect.innerHTML = ['ground', 'air', 'naval'].map(g => {
+        const opts = entries.filter(([, d]) => d.type === g)
+          .map(([k, d]) => `<option value="${k}">${icons[k] || '❓'} ${d.name || k}${custom.includes(k) ? ' ⭐' : ''}</option>`)
+          .join('');
+        return opts ? `<optgroup label="${groupLabels[g]}">${opts}</optgroup>` : '';
+      }).join('');
+      unitSelect.value = entries.some(([k]) => k === prev) ? prev : unitSelect.querySelector('option')?.value || '';
+    }
+
+    // 空战对决的红/蓝机型下拉（仅空中单位）
+    const airTypes = entries.filter(([, d]) => d.type === 'air');
+    ['duelRedType', 'duelBlueType'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      const prev = sel.value;
+      sel.innerHTML = airTypes
+        .map(([k, d]) => `<option value="${k}">${d.name || k}${custom.includes(k) ? ' ⭐' : ''}</option>`)
+        .join('');
+      sel.value = airTypes.some(([k]) => k === prev)
+        ? prev
+        : (id === 'duelBlueType' ? 'fighter_heavy' : 'fighter');
+      if (!airTypes.some(([k]) => k === sel.value) && airTypes[0]) sel.value = airTypes[0][0];
+    });
+  }
+
+  // ==================== 空战 RL 策略 ====================
+
+  /**
+   * 绑定「决策策略」下拉与 RL 训练控件
+   */
+  initRLControls() {
+    const policySel = document.getElementById('duelPolicy');
+    policySel?.addEventListener('change', () => {
+      this.send({ cmd: 'setDuelPolicy', policy: policySel.value });
+      const label = { rule: '规则专家系统', hybrid: '混合（RL 机动 + 规则兜底）', rl: '强化学习 Q-learning' }[policySel.value];
+      this.addLog(`空战决策策略：${label}`, 'info');
+    });
+
+    document.getElementById('btnRlTrain')?.addEventListener('click', async () => {
+      const episodes = Number(document.getElementById('rlEpisodes')?.value) || 100;
+      try {
+        const res = await fetch('/api/rl/train', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ episodes })
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message || '训练未启动');
+        this.addLog(`RL 自对弈训练开始：${episodes} 回合`, 'success');
+      } catch (err) {
+        this.addLog(`RL 训练启动失败: ${err.message}`, 'error');
+      }
+    });
+
+    document.getElementById('btnRlReset')?.addEventListener('click', async () => {
+      if (!confirm('清空已训练的空战 Q 表？策略将回到未训练状态。')) return;
+      try {
+        await fetch('/api/rl/reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        this.addLog('空战 RL Q 表已清空', 'info');
+        this.refreshRLStatus();
+      } catch (err) {
+        this.addLog(`清空失败: ${err.message}`, 'error');
+      }
+    });
+  }
+
+  /** 拉取一次 RL 策略状态 */
+  async refreshRLStatus() {
+    try {
+      const res = await fetch('/api/rl/status');
+      this.updateRLStatus(await res.json());
+    } catch (err) {
+      // 服务端未启动时忽略
+    }
+  }
+
+  /** 渲染 RL 状态文本（训练进度 / 已训练统计） */
+  updateRLStatus(status) {
+    const el = document.getElementById('rlStatus');
+    if (!el || !status) return;
+
+    if (status.training) {
+      const w = status.winners || {};
+      el.innerHTML = `🎓 训练中 ${status.episode}/${status.total} 回合 · ε=${status.epsilon} · 平均回报 ${status.avgReward ?? '--'}`
+        + `<br>胜负 红 ${w.red ?? 0} / 蓝 ${w.blue ?? 0} / 平 ${w.draw ?? 0}`;
+      return;
+    }
+    if (!status.trained) {
+      el.innerHTML = '⚠️ Q 表为空：切到 RL 策略前请先训练，否则等价于随机机动';
+      return;
+    }
+    const s = status.lastStats || {};
+    el.innerHTML = `✅ 已训练 ${status.episodes} 回合 · 已探索状态 ${status.states}/${status.stateSpace} · ε=${status.epsilon}`
+      + (s.winners
+        ? `<br>最近一次：红 ${s.winners.red ?? 0} / 蓝 ${s.winners.blue ?? 0} / 平 ${s.winners.draw ?? 0}，平均 ${s.avgSteps ?? '--'} 步，耗时 ${s.durationSec ?? '--'}s`
+        : '');
   }
 
   updateState(state) {
@@ -666,6 +809,7 @@ class SimCombatApp {
 
     // 重置统计（交战计数、伤害曲线、已处理事件），保证重复播放口径一致
     if (this.statsPanel) this.statsPanel.reset();
+    this._replayTrails = new Map(); // 重放时重新累积航迹
 
     const replayBar = document.getElementById('replayBar');
     const replaySlider = document.getElementById('replaySlider');
@@ -901,9 +1045,12 @@ class SimCombatApp {
     this.map2d.updateEntities(entities, showLabels, showRange);
     this.view3d.updateEntities(entities, showLabels, showRange);
 
-    // 回放帧自带的空战航迹/导弹（帧里没有则清空，避免残留到回放画面中）
-    this.map2d?.updateDuelVisuals?.(frame.missiles || [], frame.trails || [], entities);
-    this.view3d?.updateDuelVisuals?.(frame.missiles || [], frame.trails || [], entities);
+    // 回放帧自带的空战航迹/导弹；旧回放文件没有 trails 时，用已播放帧自行累积实时航迹
+    const trails = (frame.trails && frame.trails.length > 0)
+      ? frame.trails
+      : this.buildReplayTrails(entities);
+    this.map2d?.updateDuelVisuals?.(frame.missiles || [], trails, entities);
+    this.view3d?.updateDuelVisuals?.(frame.missiles || [], trails, entities);
     this.map2d?.updateDuelAircraft?.(frame.duelMode ? entities : []);
 
     // 各面板数据与实时推演保持同一口径
@@ -919,13 +1066,51 @@ class SimCombatApp {
         const target = entities.find(e => e.id === targetId);
 
         // 只有攻击者和目标都存在时才显示攻击动画
-        if (attacker && target && target.hp > 0) {
+        // 回放用一次性飞行动画（按该帧的战机实时位置绘制），避免留下常驻的红蓝箭头
+        // 击杀事件时目标 hp 已为 0，需要放行，否则回放看不到最后一击
+        const isKill = event.type === 'kill';
+        if (attacker && target && (target.hp > 0 || isKill)) {
           if (this.attackAnimations) {
-            this.attackAnimations.handleCombatEvent(event, entities);
+            this.attackAnimations.playReplayCombatEvent(event, entities);
           }
         }
       }
     }
+  }
+
+  /**
+   * 回放兜底：帧里没有 trails 数据时，按已播放帧的实体位置自行累积空战航迹，
+   * 保证 2D/3D 看到的航迹随回放推进实时增长（而不是钉在最后一段）
+   */
+  buildReplayTrails(entities) {
+    if (!this._replayTrails) this._replayTrails = new Map();
+
+    const out = [];
+    const active = new Set();
+
+    for (const e of entities) {
+      if (!e.side || (e.hp ?? 1) <= 0) continue;
+      if (!this.map2d?.isAirType?.(e)) continue;
+
+      active.add(e.id);
+      let pts = this._replayTrails.get(e.id);
+      if (!pts) {
+        pts = [];
+        this._replayTrails.set(e.id, pts);
+      }
+      const last = pts[pts.length - 1];
+      if (!last || Math.hypot(last[0] - e.x, last[1] - e.y) >= 25) {
+        pts.push([e.x, e.y, e.z || 0]);
+        if (pts.length > 150) pts.shift();
+      }
+      out.push({ entityId: e.id, points: pts });
+    }
+
+    // 已消失或已阵亡的单位不再保留历史
+    for (const id of [...this._replayTrails.keys()]) {
+      if (!active.has(id)) this._replayTrails.delete(id);
+    }
+    return out;
   }
 
   /**

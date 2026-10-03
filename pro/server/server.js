@@ -10,6 +10,15 @@ const cors = require('cors');
 const fs = require('fs');
 
 const Simulation = require('./src/engine/Simulation');
+const {
+  listEquipment,
+  upsertEquipment,
+  deleteEquipment,
+  resetEquipment,
+  resetAllEquipment
+} = require('./src/data/equipment/Database');
+const { getPolicy: getRLPolicy } = require('./src/ai/BFMPolicy');
+const { getTrainer } = require('./src/ai/BFMTrainer');
 
 const app = express();
 const server = http.createServer(app);
@@ -91,6 +100,49 @@ function deleteReplayFromDisk(name) {
   } catch (err) {
     console.error('删除回放文件失败:', err.message);
     return false;
+  }
+}
+
+// 广播 RL 策略/训练状态
+function broadcastRLStatus(status) {
+  const payload = JSON.stringify({ type: 'rlStatus', status });
+  for (const ws of clients) {
+    if (ws.readyState === WebSocket.OPEN) ws.send(payload);
+  }
+}
+
+// 触发一次 RL 自对弈训练（异步执行，不阻塞请求）
+async function startRLTraining(options = {}, ws = null) {
+  const trainer = getTrainer();
+  if (trainer.running) {
+    if (ws) ws.send(JSON.stringify({ type: 'error', message: '训练正在进行中' }));
+    return;
+  }
+  const episodes = Math.min(2000, Math.max(1, Number(options.episodes) || 100));
+  console.log(`[RL] 开始自对弈训练: ${episodes} 回合`);
+  broadcastRLStatus({ ...getRLPolicy().status(), training: true, episode: 0, total: episodes });
+  try {
+    const result = await trainer.train({
+      episodes,
+      reset: !!options.reset,
+      onProgress: (p) => broadcastRLStatus({ ...getRLPolicy().status(), training: true, ...p })
+    });
+    const status = { ...getRLPolicy().status(), training: false, lastResult: result.stats };
+    broadcastRLStatus(status);
+    console.log(`[RL] 训练完成: ${JSON.stringify(result.stats)}`);
+    if (ws) ws.send(JSON.stringify({ type: 'rlTrained', stats: result.stats }));
+  } catch (err) {
+    console.error('[RL] 训练失败:', err.message);
+    broadcastRLStatus({ ...getRLPolicy().status(), training: false, error: err.message });
+    if (ws) ws.send(JSON.stringify({ type: 'error', message: `训练失败: ${err.message}` }));
+  }
+}
+
+// 广播装备库（任一客户端修改机型参数后，让所有连接同步刷新下拉与表单）
+function broadcastEquipment() {
+  const payload = JSON.stringify({ type: 'equipment', ...listEquipment() });
+  for (const ws of clients) {
+    if (ws.readyState === WebSocket.OPEN) ws.send(payload);
   }
 }
 
@@ -191,6 +243,23 @@ function handleCommand(ws, data) {
         broadcastState();
         console.log('空战AI风格:', data.style);
       }
+      break;
+
+    case 'setDuelPolicy':
+      if (data.policy) {
+        sim.setDuelPolicy(data.policy);
+        broadcastState();
+        console.log('空战决策策略:', data.policy);
+      }
+      ws.send(JSON.stringify({ type: 'rlStatus', status: getRLPolicy().status() }));
+      break;
+
+    case 'rlStatus':
+      ws.send(JSON.stringify({ type: 'rlStatus', status: getRLPolicy().status() }));
+      break;
+
+    case 'rlTrain':
+      startRLTraining({ episodes: data.episodes || 100 }, ws);
       break;
 
     case 'createEntity':
@@ -567,10 +636,76 @@ app.get('/api/sample', (req, res) => {
   res.json(sim.sampleScenario());
 });
 
-// 获取装备列表
+// 获取装备库（含自定义/已修改标记）
 app.get('/api/equipment', (req, res) => {
-  const { EquipmentDatabase } = require('./src/data/equipment/Database');
-  res.json(EquipmentDatabase);
+  res.json(listEquipment());
+});
+
+// 装备库编辑：新增/修改机型、删除自定义机型、恢复默认
+app.post('/api/equipment', (req, res) => {
+  const { mode, type, data } = req.body || {};
+  try {
+    switch (mode) {
+      case 'upsert': {
+        if (!type || !data) return res.status(400).json({ success: false, message: '缺少 type 或 data' });
+        const result = upsertEquipment(type, data);
+        console.log(`[装备库] ${result.created ? '新增机型' : '更新机型'}: ${type} (${data.name || ''})`);
+        broadcastEquipment();
+        return res.json({ success: true, ...result });
+      }
+      case 'delete': {
+        if (!type) return res.status(400).json({ success: false, message: '缺少 type' });
+        const ok = deleteEquipment(type);
+        if (!ok) return res.status(400).json({ success: false, message: '内置机型不可删除' });
+        console.log(`[装备库] 删除自定义机型: ${type}`);
+        broadcastEquipment();
+        return res.json({ success: true });
+      }
+      case 'reset': {
+        if (!type) return res.status(400).json({ success: false, message: '缺少 type' });
+        resetEquipment(type);
+        console.log(`[装备库] 恢复默认机型: ${type}`);
+        broadcastEquipment();
+        return res.json({ success: true });
+      }
+      case 'resetAll': {
+        resetAllEquipment();
+        console.log('[装备库] 已恢复出厂装备库');
+        broadcastEquipment();
+        return res.json({ success: true });
+      }
+      default:
+        return res.status(400).json({ success: false, message: `未知操作: ${mode}` });
+    }
+  } catch (err) {
+    console.error('[装备库] 操作失败:', err.message);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ====== 空战 RL 策略（Q-learning 机动策略） ======
+app.get('/api/rl/status', (req, res) => {
+  const policy = getRLPolicy();
+  res.json({ ...policy.status(), training: getTrainer().running });
+});
+
+// 启动自对弈训练（异步，立即返回）
+app.post('/api/rl/train', (req, res) => {
+  const trainer = getTrainer();
+  if (trainer.running) {
+    return res.status(409).json({ success: false, message: '训练正在进行中' });
+  }
+  const episodes = Number(req.body?.episodes) || 100;
+  res.json({ success: true, message: `已开始训练 ${episodes} 回合` });
+  // 响应发出后再开始训练，避免阻塞 HTTP
+  setImmediate(() => startRLTraining({ episodes, reset: !!req.body?.reset }));
+});
+
+// 清空 Q 表
+app.post('/api/rl/reset', (req, res) => {
+  getRLPolicy().reset();
+  broadcastRLStatus({ ...getRLPolicy().status(), training: false });
+  res.json({ success: true, message: 'Q 表已清空' });
 });
 
 // 保存推演状态

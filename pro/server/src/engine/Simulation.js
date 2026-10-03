@@ -41,6 +41,7 @@ class Simulation {
     this.duelResult = null;
     this.duelMissiles = [];
     this.duelTrails = [];
+    this.duelPolicy = 'rule';   // 空战决策策略：rule | hybrid | rl
 
     // 实体管理
     this.entities = [];
@@ -439,14 +440,31 @@ class Simulation {
     this.tickRate = config.tickRate || Math.min(this.baseTickRate, 300);
     this.airCombat.init(this.entities, {
       style: config.style || this.aiStyle,
-      damageScale: config.damageScale
+      damageScale: config.damageScale,
+      policy: config.policy || this.duelPolicy || 'rule'
     });
 
     this.updateStats();
     this.recordFrame();
 
-    console.log(`空战对决已准备: ${redEntity.name}(红) vs ${blueEntity.name}(蓝), 距离 ${Math.round(Math.hypot(bluePos.x - redPos.x, bluePos.y - redPos.y))}m`);
+    if (!config.quiet) {
+      console.log(`空战对决已准备: ${redEntity.name}(红) vs ${blueEntity.name}(蓝), 距离 ${Math.round(Math.hypot(bluePos.x - redPos.x, bluePos.y - redPos.y))}m, 策略 ${this.airCombat.policy}`);
+    }
     return this.getState();
+  }
+
+  /**
+   * 设置空战决策策略（下一场对决生效；进行中也立即作用于 AI）
+   * @param {'rule'|'hybrid'|'rl'} policy
+   */
+  setDuelPolicy(policy) {
+    this.duelPolicy = policy || 'rule';
+    this.airCombat.setPolicy(this.duelPolicy);
+    // 让场上已有的战机立刻切换策略
+    for (const e of this.entities) {
+      if (e.duelPolicy !== undefined) e.duelPolicy = this.duelPolicy;
+    }
+    return this.duelPolicy;
   }
 
   /**

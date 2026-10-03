@@ -459,7 +459,8 @@ class AttackAnimations {
       color = '#ff6b00',
       speed = 500, // 动画持续时间(ms)
       width = 3,
-      type = 'missile' // missile, bullet, laser, artillery
+      type = 'missile', // missile, bullet, laser, artillery
+      explode = true    // 飞行结束时是否自动播放爆炸（回放时由调用方统一处理）
     } = options;
 
     // 根据类型选择轨迹样式
@@ -550,7 +551,9 @@ class AttackAnimations {
     const duration = speed;
     let currentIndex = 0;
 
+    const gen = this.generation;
     const animate = () => {
+      if (gen !== this.generation) return; // 已被 clearAll 取消
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
 
@@ -581,8 +584,10 @@ class AttackAnimations {
       if (progress < 1) {
         requestAnimationFrame(animate);
       } else {
-        // 动画结束，显示爆炸效果
-        this.createExplosion(to, { color, type });
+        // 动画结束，显示爆炸效果（回放时由调用方按伤害等级统一处理）
+        if (explode) {
+          this.createExplosion(to, { color, type });
+        }
 
         // 清理
         this.schedule(() => {
@@ -909,78 +914,51 @@ class AttackAnimations {
     animate();
   }
 
+  // 空中单位机型（用于选择导弹动画）
+  static get AIR_TYPES() {
+    return ['fighter', 'fighter_heavy', 'fighter_light', 'bomber', 'helicopter', 'uav', 'awacs'];
+  }
+
   /**
-   * 处理战斗事件并创建相应动画
+   * 解析战斗事件，得到攻击者/目标、地理坐标、动画类型与配色
    * 支持两种事件格式：
    * - 普通攻击: {attacker, target, attackerSide, hit, damage}
    * - 击杀事件: {killer, victim, killerSide, type: 'kill'}
+   * @returns {Object|null} 上下文；实体缺失或坐标无效时返回 null
    */
-  handleCombatEvent(event, entities) {
-    // 调试输出
-    console.log('处理战斗事件:', event);
-    console.log('可用实体数量:', entities?.length || 0);
+  resolveAttackContext(event, entities) {
+    if (!entities || entities.length === 0) return null;
 
-    if (!entities || entities.length === 0) {
-      console.warn('实体数组为空，无法显示攻击动画');
-      return;
-    }
-
-    // 统一不同事件格式的字段名
-    // 普通攻击: attacker/target | 击杀事件: killer/victim
     const attackerId = event.attacker || event.killer;
     const targetId = event.target || event.victim;
-    const attackerSide = event.attackerSide || event.killerSide;
+    if (!attackerId || !targetId) return null;
 
-    if (!attackerId || !targetId) {
-      console.warn('战斗事件缺少攻击者或目标ID:', event);
-      return;
-    }
-
-    // 查找实体
     const attacker = entities.find(e => e.id === attackerId);
     const target = entities.find(e => e.id === targetId);
+    if (!attacker || !target) return null;
 
-    if (!attacker || !target) {
-      console.warn(`找不到实体: 攻击者=${attackerId}, 目标=${targetId}`);
-      console.log('可用实体ID列表:', entities.map(e => e.id));
-      return;
-    }
-
-    // 获取位置 - 实体可能有 x/y 或 X/Y 属性
     const attackerX = attacker.x !== undefined ? attacker.x : attacker.X;
     const attackerY = attacker.y !== undefined ? attacker.y : attacker.Y;
     const targetX = target.x !== undefined ? target.x : target.X;
     const targetY = target.y !== undefined ? target.y : target.Y;
+    if (attackerX === undefined || attackerY === undefined) return null;
 
-    if (attackerX === undefined || attackerY === undefined) {
-      console.warn('攻击者缺少位置信息:', attacker);
-      return;
-    }
-
-    // 坐标转换 - 使用 map2d 的 simToGeo 方法
     const geoPos = this.map2d.simToGeo(attackerX, attackerY);
     const targetPos = this.map2d.simToGeo(targetX, targetY);
-
-    // 计算距离
     const dist = Math.hypot(targetX - attackerX, targetY - attackerY);
 
-    // 根据阵营选择颜色：红方红色，蓝方蓝色
-    const sideColors = {
-      red: '#ff4444',    // 红方 - 红色轨迹
-      blue: '#4488ff'    // 蓝方 - 蓝色轨迹
-    };
+    const attackerSide = event.attackerSide || event.killerSide || attacker.side;
+    const sideColors = { red: '#ff4444', blue: '#4488ff' };
     const color = sideColors[attackerSide] || sideColors[attacker.side] || '#ff6b00';
 
-    // 根据距离和类型选择动画
+    // 按机型选择动画（远程炮兵才走抛物线；空中单位一律导弹）
+    const equipmentType = attacker.equipmentType || attacker.type;
     let type = 'bullet';
     let speed = 200;
-
-    // 判断攻击类型
-    const equipmentType = attacker.equipmentType || attacker.type;
-    if (equipmentType === 'artillery' || dist > 2000) {
+    if (equipmentType === 'artillery') {
       type = 'artillery';
       speed = 800;
-    } else if (['fighter', 'bomber', 'helicopter'].includes(equipmentType)) {
+    } else if (AttackAnimations.AIR_TYPES.includes(equipmentType)) {
       type = 'missile';
       speed = 400;
     } else if (equipmentType === 'tank') {
@@ -989,18 +967,79 @@ class AttackAnimations {
     } else if (equipmentType === 'infantry') {
       type = 'bullet';
       speed = 150;
+    } else if (dist > 2000) {
+      type = 'artillery';
+      speed = 800;
     }
 
-    console.log(`创建攻击动画: ${attackerId} -> ${targetId}, 类型=${type}, 颜色=${color}, 距离=${Math.round(dist)}m`);
+    const isCounterAttack = entities.some(e => e.id === targetId && e.lastAttackTarget === attackerId);
+    const isKill = event.type === 'kill';
 
-    // 检测是否为反击（目标在当前帧也攻击了攻击者）
-    const isCounterAttack = entities.some(e => {
-      // 检查目标是否在当前帧攻击了攻击者
-      return e.id === targetId && e.lastAttackTarget === attackerId;
+    return {
+      attackerId, targetId, attacker, target, attackerSide,
+      geoPos, targetPos, dist, type, speed, color,
+      attackColor: isCounterAttack ? '#ffa500' : color,
+      isCounterAttack, isKill,
+      isHit: !!(event.hit || isKill)
+    };
+  }
+
+  /**
+   * 回放模式的攻击表现：一次性飞行动画 + 命中特效，不创建持续攻击线。
+   * 持续攻击线需要逐帧跟随单位更新，回放里不会被更新，会变成钉在原地的双向红蓝箭头。
+   */
+  playReplayCombatEvent(event, entities) {
+    // 纯提示类事件（干扰弹、导弹自毁）没有交战实体，不画攻击线
+    if (event.type === 'flare' || event.type === 'missile_expired') return;
+
+    const ctx = this.resolveAttackContext(event, entities);
+    if (!ctx) return;
+
+    const { geoPos, targetPos, type, speed, color, target, isHit, isKill, attackerSide } = ctx;
+    const damage = event.damage || 0;
+    const damagePercent = damage / (target.maxHp || 100);
+
+    // 飞行轨迹（自带方向箭头）；爆炸由下面按伤害等级统一处理，避免叠加多个效果
+    this.createAttackLine(geoPos, targetPos, {
+      color, type, speed, width: 3, explode: false
     });
 
-    // 如果是反击，使用特殊颜色
-    const attackColor = isCounterAttack ? '#ffa500' : color; // 橙色表示反击
+    this.schedule(() => {
+      if (!isHit) {
+        this.createHitMarker(targetPos, false, '❌ 未命中');
+        return;
+      }
+      if (isKill) {
+        this.createHitMarker(targetPos, true, '💥 击杀!');
+        this.createDestructionEffect(targetPos, attackerSide, 'kill');
+      } else if (damagePercent > 0.3) {
+        this.createHitMarker(targetPos, true, `💥 -${Math.round(damage)}`);
+        this.createExplosion(targetPos, { color, type, size: 40 });
+      } else if (damagePercent > 0.1) {
+        this.createHitMarker(targetPos, true, `💢 -${Math.round(damage)}`);
+        this.createExplosion(targetPos, { color, type, size: 25 });
+      } else {
+        this.createHitMarker(targetPos, true, `⚡ -${Math.round(damage)}`);
+        this.createSmallExplosion(targetPos);
+      }
+    }, Math.max(150, Math.round(speed * 0.7)));
+  }
+
+  /**
+   * 处理战斗事件并创建相应动画（实时推演：持续攻击线 + 命中特效）
+   * 支持两种事件格式：
+   * - 普通攻击: {attacker, target, attackerSide, hit, damage}
+   * - 击杀事件: {killer, victim, killerSide, type: 'kill'}
+   */
+  handleCombatEvent(event, entities) {
+    const ctx = this.resolveAttackContext(event, entities);
+    if (!ctx) return;
+
+    const {
+      attackerId, targetId, target, attackerSide, geoPos, targetPos,
+      type, color, attackColor,
+      isKill, isHit, isCounterAttack
+    } = ctx;
 
     // 创建持续攻击线（在攻击期间保持显示）
     this.createOrUpdateSustainedAttack(geoPos, targetPos, attackerId, targetId, {
@@ -1010,7 +1049,6 @@ class AttackAnimations {
     });
 
     // 如果是击杀事件，结束持续攻击显示并播放摧毁效果
-    const isKill = event.type === 'kill';
     if (isKill) {
       this.schedule(() => {
         this.endSustainedAttack(attackerId, targetId);
@@ -1019,7 +1057,6 @@ class AttackAnimations {
 
     // 命中/未命中效果
     // 普通攻击有 hit 字段，击杀事件有 type='kill'
-    const isHit = event.hit || isKill;
 
     if (isHit) {
       // 根据伤害程度选择不同效果

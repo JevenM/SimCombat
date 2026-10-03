@@ -28,7 +28,8 @@ const MANEUVER_LABELS = {
   split_s: '破S机动（下降翻转）',
   defensive_spiral: '防御盘旋',
   beam_evade: '侧转脱离导弹',
-  flare_evade: '释放干扰弹 + 急转'
+  flare_evade: '释放干扰弹 + 急转',
+  extend: '加速脱离（拉开距离）'
 };
 
 class AirCombatAI {
@@ -36,6 +37,8 @@ class AirCombatAI {
     this.terrain = terrain;
     this.memories = new Map(); // entityId -> 战术记忆
     this.style = 'balanced';   // aggressive | balanced | defensive
+    this.policy = 'rule';      // rule | hybrid | rl（rl/hybrid 由 Q-learning 策略选机动）
+    this.rl = null;            // BFMPolicy 实例（按需加载）
   }
 
   reset() {
@@ -46,6 +49,22 @@ class AirCombatAI {
     this.style = style || 'balanced';
   }
 
+  /**
+   * 切换决策策略
+   * @param {'rule'|'hybrid'|'rl'} policy
+   *   rule   : 纯规则专家系统（BFM 手册）
+   *   hybrid : RL 选机动 + 来袭导弹时规则兜底
+   *   rl     : 完全由 RL 策略选机动（含规避）
+   */
+  setPolicy(policy) {
+    this.policy = policy || 'rule';
+    if (this.policy !== 'rule' && !this.rl) {
+      // 延迟 require，避免与 trainer 形成模块循环依赖
+      this.rl = require('../../ai/BFMPolicy').getPolicy();
+    }
+    return this.policy;
+  }
+
   getMemory(entityId) {
     if (!this.memories.has(entityId)) {
       this.memories.set(entityId, {
@@ -54,6 +73,9 @@ class AirCombatAI {
         flareTimer: 0,
         lastManeuver: 'patrol',
         maneuverHoldSec: 0,
+        // RL 决策：动作保持时间，避免每个子步抖动切换机动
+        rlHoldSec: 0,
+        lastRlAction: null,
         // 每架机的转向偏好，避免两台相同 AI 完全镜像导致僵局
         turnBias: Math.random() < 0.5 ? -1 : 1,
         patrolHeading: 0
@@ -170,6 +192,9 @@ class AirCombatAI {
     const cannon = ac.cannon || { range: 1000, coneDeg: 10, damage: 60, fireRate: 5, accuracy: 0.7 };
     const missileSpec = ac.missile || { count: 0, range: 0, launchMin: 0, damage: 0, lockSec: 1.5 };
     const style = entity.duelStyle || this.style;
+    const useRL = entity.duelPolicy || this.policy;
+    // RL 动作保持计时
+    memory.rlHoldSec = Math.max(0, (memory.rlHoldSec || 0) - dt);
 
     const baseHeading = entity.heading;
     const maxAlt = entity.maxAltitude || 18000;
@@ -198,6 +223,10 @@ class AirCombatAI {
     // ---------- 1. 来袭导弹规避（最高优先级） ----------
     const threat = this.pickMostDangerous(entity, incomingMissiles);
     if (threat && threat.timeToImpact < (style === 'aggressive' ? 3.2 : 4.5)) {
+      // rl 模式下连规避机动也交给策略（hybrid 仍走规则兜底）
+      if (useRL === 'rl') {
+        return this.rlCommand(entity, target, sit, memory, cmd, threat);
+      }
       memory.state = 'evade_missile';
       memory.lockTime = 0;
 
@@ -232,14 +261,130 @@ class AirCombatAI {
     const threatened = heHasNose && !iHaveNose && sit.dist < enemyWeaponRange;
 
     if (threatened) {
+      if (useRL === 'rl' || useRL === 'hybrid') {
+        return this.rlCommand(entity, target, sit, memory, cmd, threat);
+      }
       memory.state = 'defensive';
       memory.lockTime = 0;
       return this.defensiveCommand(entity, target, sit, memory, style, maxAlt, dt, cmd);
     }
 
     // ---------- 3. 进攻 / 占位 ----------
+    if (useRL === 'rl' || useRL === 'hybrid') {
+      return this.rlCommand(entity, target, sit, memory, cmd, threat);
+    }
     memory.state = iHaveTail || iHaveNose ? 'offensive' : 'neutral';
     return this.offensiveCommand(entity, target, sit, memory, cannon, missileSpec, style, maxAlt, dt, cmd);
+  }
+
+  /**
+   * RL 决策入口：把态势离散成状态键 → Q 表选机动 → 翻译成飞行指令
+   */
+  rlCommand(entity, target, sit, memory, cmd, threat) {
+    if (!this.rl) this.setPolicy(this.policy);
+    const hasThreat = !!threat && threat.timeToImpact < 5;
+    const hasMissile = (entity.missileCount || 0) > 0;
+    const key = this.rl.encode(sit, hasThreat, hasMissile);
+
+    // 动作保持：机动切换后维持 0.5s，避免高频抖动
+    let action = null;
+    if ((memory.rlHoldSec || 0) > 0 && memory.lastRlAction) {
+      action = memory.lastRlAction;
+    } else {
+      action = this.rl.select(key, this.rl.explore);
+      memory.lastRlAction = action;
+      memory.rlHoldSec = 0.5;
+    }
+    entity.__rlAction = action;      // 训练器据此取回实际执行的动作
+
+    return this.applyManeuver(entity, target, sit, memory, action, cmd, threat);
+  }
+
+  /**
+   * 把 RL 选出的机动原语翻译成飞行指令；武器发射仍走规则裁决
+   */
+  applyManeuver(entity, target, sit, memory, action, cmd, threat) {
+    const cross = memory.turnBias;
+    const enemyBearing = norm360(sit.bearing + 180); // 敌机相对我的方位
+    const desiredLead = this.interceptHeading(entity, target, 1400);
+    const myAlt = entity.z || 5000;
+
+    let desired = desiredLead;
+    let altitude = this.clampAltitude(entity, target.z || 5000);
+    let evasive = false;
+
+    switch (action) {
+      case 'lag_pursuit':
+        desired = norm360(sit.bearing + 22 * cross);
+        altitude = this.clampAltitude(entity, myAlt + 300);
+        break;
+      case 'high_yoyo':
+        desired = norm360(sit.bearing + 18 * cross);
+        altitude = this.clampAltitude(entity, myAlt + 700);
+        break;
+      case 'low_yoyo':
+        desired = desiredLead;
+        altitude = this.clampAltitude(entity, myAlt - 500);
+        break;
+      case 'break_turn':
+        desired = norm360(enemyBearing + 95 * cross);
+        altitude = this.clampAltitude(entity, myAlt + (sit.altDiff > 0 ? 300 : -300));
+        evasive = true;
+        break;
+      case 'barrel_roll_defense':
+        desired = norm360(enemyBearing + 110 * cross);
+        altitude = this.clampAltitude(entity, myAlt + 400 * cross);
+        evasive = true;
+        break;
+      case 'split_s':
+        desired = norm360(enemyBearing + 130 * cross);
+        altitude = this.clampAltitude(entity, myAlt - 800);
+        evasive = true;
+        break;
+      case 'defensive_spiral':
+        desired = norm360(enemyBearing + 70 * cross);
+        altitude = this.clampAltitude(entity, myAlt);
+        evasive = true;
+        break;
+      case 'extend':
+        desired = norm360(sit.bearing + 180 + 20 * cross);
+        altitude = this.clampAltitude(entity, myAlt + 200);
+        break;
+      case 'merge_offset':
+        desired = norm360(sit.bearing + 28 * cross);
+        altitude = this.chaseAltitude(entity, target, 200);
+        break;
+      case 'lead_pursuit':
+      default:
+        desired = desiredLead;
+        altitude = this.clampAltitude(entity, target.z || 5000);
+        break;
+    }
+
+    cmd.desiredHeading = desired;
+    cmd.desiredAltitude = altitude;
+    cmd.throttle = 1;
+    cmd.evasive = evasive;
+    cmd.maneuverName = action;
+    cmd.state = evasive ? 'defensive' : 'offensive';
+
+    // ---- 武器：规则裁决（RL 只负责机动，保证行为可解释且训练空间可控） ----
+    const cannon = entity.airCombat?.cannon || { range: 1000, coneDeg: 10 };
+    if (sit.dist <= cannon.range && sit.myATA <= cannon.coneDeg) {
+      cmd.fireCannon = true;
+      cmd.desiredHeading = desiredLead; // 开火瞬间保持前置跟踪
+    }
+    const ms = entity.airCombat?.missile || {};
+    if ((entity.missileCount || 0) > 0 && sit.myATA < 40 &&
+        sit.dist > Math.max(1500, ms.launchMin || 0) && sit.dist < (ms.range || 0) * 0.85) {
+      cmd.launchMissile = true;
+    }
+    // 干扰弹属于安全兜底，任何模式都保留
+    if (threat && threat.dist < 2600 && (entity.flareCount || 0) > 0) {
+      cmd.flare = true;
+      if (cmd.maneuverName === 'lead_pursuit') cmd.maneuverName = 'flare_evade';
+    }
+    return cmd;
   }
 
   pickMostDangerous(entity, missiles) {

@@ -300,6 +300,32 @@ body {
 .duel-air-tag.blue { color: #58a6ff; border-color: #1f6feb; }
 .duel-air-tag.down { color: #8b949e; border-color: #30363d; text-decoration: line-through; }
 
+/* ===== 装备参数编辑面板 ===== */
+.equipment-editor #equipForm {
+  display: flex; flex-direction: column; gap: 8px; margin: 6px 0 10px;
+}
+.equip-group {
+  border: 1px solid #30363d; border-radius: 6px;
+  padding: 6px 8px 8px; background: rgba(13, 17, 23, 0.5);
+}
+.equip-group legend { font-size: 11px; color: #58a6ff; padding: 0 4px; }
+.equip-field {
+  display: grid; grid-template-columns: 1.35fr 1fr; align-items: center;
+  gap: 6px; margin-bottom: 4px; font-size: 11px; color: #8b949e;
+}
+.equip-field span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.equip-field input[type="text"],
+.equip-field input[type="number"],
+.equip-field select {
+  width: 100%; padding: 3px 6px; font-size: 11px;
+  background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; border-radius: 4px;
+}
+.equip-field input[type="checkbox"] { justify-self: start; width: 14px; height: 14px; }
+.equip-field input:focus,
+.equip-field select:focus { outline: none; border-color: #58a6ff; }
+#equipMeta { margin: 4px 0 8px; }
+#equipMeta code { color: #58a6ff; }
+
 /* 单位信息 */
 #selectedEntity { font-size: 12px; }
 #selectedEntity .no-selection { color: #6e7681; font-style: italic; text-align: center; padding: 20px; }

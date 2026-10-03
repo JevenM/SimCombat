@@ -31,6 +31,7 @@ class AirCombatSystem {
     this.elapsed = 0;
     this.ended = null;        // { winner, reason }
     this.style = 'balanced';
+    this.policy = 'rule';     // rule | hybrid | rl
   }
 
   /**
@@ -39,6 +40,7 @@ class AirCombatSystem {
   init(entities, options = {}) {
     this.reset();
     this.style = options.style || 'balanced';
+    this.setPolicy(options.policy || 'rule');
     this.ai.setStyle(this.style);
     if (options.damageScale !== undefined) this.damageScale = options.damageScale;
     this.missiles.damageScale = this.damageScale;
@@ -47,6 +49,7 @@ class AirCombatSystem {
       if (!isAirEntity(e)) continue;
       this.flight.initEntity(e);
       e.duelStyle = options.stylePerSide?.[e.side] || this.style;
+      e.duelPolicy = options.policyPerSide?.[e.side] || this.policy;
       e.status = 'patrolling';
       e.bfmState = 'cruise';
       e.bfmManeuver = 'patrol';
@@ -66,6 +69,15 @@ class AirCombatSystem {
     this.style = style || 'balanced';
     this.ai.setStyle(this.style);
     return this.style;
+  }
+
+  /**
+   * 切换决策策略：rule（规则专家系统）/ hybrid（RL机动+规则兜底）/ rl（纯 RL 机动）
+   */
+  setPolicy(policy) {
+    this.policy = policy || 'rule';
+    this.ai.setPolicy(this.policy);
+    return this.policy;
   }
 
   /**
@@ -302,9 +314,11 @@ class AirCombatSystem {
   }
 
   trailSnapshot() {
+    // 必须深拷贝点位：this.trails 里的数组会被 recordTrail() 原地 push/shift，
+    // 若直接把引用交给回放帧，保存时所有帧都会变成同一份「最终航迹」
     const out = [];
     for (const [entityId, points] of this.trails) {
-      out.push({ entityId, points });
+      out.push({ entityId, points: points.map(p => [p[0], p[1], p[2]]) });
     }
     return out;
   }

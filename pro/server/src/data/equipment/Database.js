@@ -599,6 +599,130 @@ const EquipmentDescriptions = {
   submarine: '攻击型核潜艇，静音性能好，续航能力强'
 };
 
+// ==================== 装备库运行时编辑 ====================
+// 支持用户调整现有机型参数、新增自定义机型，并持久化到本地文件（重启后保留）
+const fs = require('fs');
+const path = require('path');
+
+// 内置库的原始快照（用于「恢复默认」）
+const BUILTIN_DB_SNAPSHOT = JSON.parse(JSON.stringify(EquipmentDatabase));
+const OVERRIDE_FILE = path.join(__dirname, '../../../data/equipment-overrides.json');
+
+const customTypes = new Set();    // 用户新建的机型
+const modifiedTypes = new Set();  // 被改过的内置机型
+
+/** 为机型补齐派生字段（生命上限、空战参数） */
+function ensureDerivedFields(key, data) {
+  if (data.maxHp === undefined) data.maxHp = data.hp;
+  if (data.type === 'air') {
+    data.airCombat = data.airCombat
+      || AIR_COMBAT_PROFILES[key]
+      || JSON.parse(JSON.stringify(DEFAULT_AIR_COMBAT));
+  }
+  return data;
+}
+
+function persistOverrides() {
+  const modified = {};
+  for (const key of modifiedTypes) modified[key] = EquipmentDatabase[key];
+  const custom = {};
+  for (const key of customTypes) custom[key] = EquipmentDatabase[key];
+  try {
+    fs.mkdirSync(path.dirname(OVERRIDE_FILE), { recursive: true });
+    fs.writeFileSync(OVERRIDE_FILE, JSON.stringify({ modified, custom }, null, 2), 'utf8');
+  } catch (err) {
+    console.warn('[装备库] 持久化失败:', err.message);
+  }
+}
+
+function loadOverrides() {
+  if (!fs.existsSync(OVERRIDE_FILE)) return;
+  try {
+    const parsed = JSON.parse(fs.readFileSync(OVERRIDE_FILE, 'utf8'));
+    for (const [key, data] of Object.entries(parsed.custom || {})) {
+      EquipmentDatabase[key] = ensureDerivedFields(key, data);
+      customTypes.add(key);
+    }
+    for (const [key, data] of Object.entries(parsed.modified || {})) {
+      EquipmentDatabase[key] = ensureDerivedFields(key, data);
+      modifiedTypes.add(key);
+    }
+    console.log(`[装备库] 已加载自定义配置：${customTypes.size} 个新机型，${modifiedTypes.size} 个已修改机型`);
+  } catch (err) {
+    console.warn('[装备库] 覆盖配置加载失败:', err.message);
+  }
+}
+
+/**
+ * 导出给前端的完整装备库
+ * @returns {{database: Object, custom: string[], modified: string[]}}
+ */
+function listEquipment() {
+  return {
+    database: EquipmentDatabase,
+    custom: [...customTypes],
+    modified: [...modifiedTypes]
+  };
+}
+
+/**
+ * 新增或更新机型
+ * @param {string} key - 装备键名（英文ID）
+ * @param {Object} data - 装备参数
+ * @returns {{created: boolean, key: string}}
+ */
+function upsertEquipment(key, data) {
+  if (!key || !data) throw new Error('缺少机型标识或参数');
+  const isNew = !EquipmentDatabase[key];
+  if (isNew) {
+    customTypes.add(key);
+  } else if (!customTypes.has(key)) {
+    modifiedTypes.add(key);
+  }
+  EquipmentDatabase[key] = ensureDerivedFields(key, {
+    ...EquipmentDatabase[key],
+    ...JSON.parse(JSON.stringify(data))
+  });
+  persistOverrides();
+  return { created: isNew, key };
+}
+
+/** 删除机型（只允许删除用户自定义的机型） */
+function deleteEquipment(key) {
+  if (!customTypes.has(key)) return false;
+  delete EquipmentDatabase[key];
+  customTypes.delete(key);
+  modifiedTypes.delete(key);
+  persistOverrides();
+  return true;
+}
+
+/** 恢复单个内置机型到出厂参数（自定义机型则删除） */
+function resetEquipment(key) {
+  if (customTypes.has(key)) return deleteEquipment(key);
+  if (!BUILTIN_DB_SNAPSHOT[key]) return false;
+  EquipmentDatabase[key] = JSON.parse(JSON.stringify(BUILTIN_DB_SNAPSHOT[key]));
+  ensureDerivedFields(key, EquipmentDatabase[key]);
+  modifiedTypes.delete(key);
+  persistOverrides();
+  return true;
+}
+
+/** 恢复全部：删除所有自定义机型，内置机型回到出厂参数 */
+function resetAllEquipment() {
+  for (const key of [...customTypes]) delete EquipmentDatabase[key];
+  customTypes.clear();
+  for (const [key, data] of Object.entries(BUILTIN_DB_SNAPSHOT)) {
+    EquipmentDatabase[key] = JSON.parse(JSON.stringify(data));
+  }
+  modifiedTypes.clear();
+  persistOverrides();
+  return true;
+}
+
+// 模块加载时立即应用本地覆盖配置
+loadOverrides();
+
 module.exports = {
   EquipmentDatabase,
   getEquipment,
@@ -607,5 +731,11 @@ module.exports = {
   EquipmentDescriptions,
   AIR_COMBAT_PROFILES,
   DEFAULT_AIR_COMBAT,
-  isAirEntity
+  isAirEntity,
+  // 装备库编辑接口
+  listEquipment,
+  upsertEquipment,
+  deleteEquipment,
+  resetEquipment,
+  resetAllEquipment
 };
