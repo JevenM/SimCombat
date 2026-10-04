@@ -1087,7 +1087,7 @@ class Map2D {
     this.map.setView([y / 100, x / 100], zoom);
   }
 
-  highlightEntity(id) {
+  highlightEntity(id, openPopup = true) {
     // 取消之前的高亮
     this.entityLayers.forEach((layer, lid) => {
       layer.setZIndexOffset(0);
@@ -1096,7 +1096,7 @@ class Map2D {
     const layer = this.entityLayers.get(id);
     if (layer) {
       layer.setZIndexOffset(1000);
-      layer.openPopup();
+      if (openPopup) layer.openPopup();
       this.selectedId = id;
     }
   }

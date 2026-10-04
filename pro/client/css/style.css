@@ -183,6 +183,7 @@ body {
 }
 
 .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.btn.active { box-shadow: 0 0 0 2px #f0c674 inset; filter: brightness(1.2); }
 
 .btn-primary { background: #238636; color: #fff; }
 .btn-danger { background: #da3633; color: #fff; }
@@ -325,6 +326,15 @@ body {
 .equip-field select:focus { outline: none; border-color: #58a6ff; }
 #equipMeta { margin: 4px 0 8px; }
 #equipMeta code { color: #58a6ff; }
+
+/* 单位实时状态：阵营切换 + 单位下拉 + 上/下一个 */
+.unit-picker { margin-bottom: 8px; }
+.unit-picker .btn { padding: 5px 8px; font-size: 11px; }
+.unit-picker .side-pick.active { box-shadow: 0 0 0 2px #f0c674 inset; filter: brightness(1.25); }
+.unit-picker select { width: 100%; margin-top: 6px; }
+.unit-picker-nav { margin-top: 6px; }
+.unit-picker-nav .btn { flex: 1; }
+.picker-hint { margin: 6px 0 0; font-size: 11px; line-height: 1.5; color: #6e7681; }
 
 /* 单位信息 */
 #selectedEntity { font-size: 12px; }

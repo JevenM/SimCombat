@@ -19,6 +19,7 @@ class View3D {
     this.missileMeshes = new Map(); // missileId -> THREE.Mesh
     this.effects = [];              // 爆炸等临时特效
     this.followDuel = false;        // 双机跟随相机
+    this.followSide = null;         // 单阵营跟随（'red' | 'blue' | null）
     this.airTargets = [];           // 最近一次更新的空中单位（跟随相机用）
     this.explodedIds = new Set();   // 已生成爆炸特效的实体
 
@@ -385,29 +386,46 @@ class View3D {
    */
   setFollowDuel(enabled) {
     this.followDuel = !!enabled;
-    if (!this.followDuel && this.camera) {
+    if (this.followDuel) this.followSide = null;
+    if (!this.followDuel && !this.followSide && this.camera) {
       // 恢复全局俯瞰视角
       this.camera.position.set(5000, 12000, 8000);
       this.camera.lookAt(5000, 0, 5000);
     }
   }
 
+  /**
+   * 单阵营跟随相机：只锁定指定阵营的空中单位（与双机跟随互斥）
+   */
+  setFollowSide(side) {
+    this.followSide = side || null;
+    if (this.followSide) this.followDuel = false;
+  }
+
   updateFollowCamera() {
-    if (!this.followDuel || !this.camera || this.airTargets.length === 0) return;
+    if (!this.camera || this.airTargets.length === 0) return;
+    if (!this.followDuel && !this.followSide) return;
 
-    const alive = this.airTargets.filter(e => e.hp > 0);
-    if (alive.length === 0) return;
+    let list = this.airTargets.filter(e => (e.hp ?? 1) > 0);
+    if (list.length === 0) return;
 
-    const cx = alive.reduce((s, e) => s + e.x, 0) / alive.length;
-    const cy = alive.reduce((s, e) => s + e.y, 0) / alive.length;
-    const cz = alive.reduce((s, e) => s + (e.z || 0), 0) / alive.length;
+    // 单阵营跟随：该阵营暂无存活空中单位时保持当前视角，等单位出现再接管
+    if (this.followSide) {
+      const sideList = list.filter(e => e.side === this.followSide);
+      if (sideList.length === 0) return;
+      list = sideList;
+    }
 
-    // 相机保持在中点斜后上方，随双机间距自适应
-    const spread = Math.max(1500, Math.hypot(
-      alive[0].x - (alive[1]?.x ?? alive[0].x),
-      alive[0].y - (alive[1]?.y ?? alive[0].y)
-    ));
-    const dist = Math.min(9000, spread * 1.6 + 1200);
+    const cx = list.reduce((s, e) => s + e.x, 0) / list.length;
+    const cy = list.reduce((s, e) => s + e.y, 0) / list.length;
+    const cz = list.reduce((s, e) => s + (e.z || 0), 0) / list.length;
+
+    // 相机保持在中点斜后上方，随编队散布自适应
+    let spread = 0;
+    for (const e of list) {
+      spread = Math.max(spread, Math.hypot(e.x - cx, e.y - cy));
+    }
+    const dist = Math.min(9000, Math.max(1200, spread * 2.2 + 1500));
 
     const target = new THREE.Vector3(cx, cz, cy);
     const dir = new THREE.Vector3(0.6, 0.75, 0.9).normalize().multiplyScalar(dist);
@@ -603,26 +621,24 @@ class View3D {
     this.container.style.display = visible ? 'block' : 'none';
   }
 
-  // 聚焦到指定位置
-  focusOnPosition(x, y) {
-    // 计算新的相机位置 - 保持相机高度和角度，只改变目标点
-    const targetX = x;
-    const targetZ = y; // Three.js Z对应仿真的Y
+  /**
+   * 聚焦到指定位置
+   * 注意：原实现用「相机位置 - 目标点」当偏移量再叠加回目标点，等价于原地不动，
+   * 结果只有 lookAt 转了一下视角，画面几乎没变化。这里改为固定的斜后上方机位。
+   * @param {number} x - 仿真 X
+   * @param {number} y - 仿真 Y
+   * @param {number} z - 仿真高度（米）
+   * @param {number} dist - 相机到目标的距离
+   */
+  focusOnPosition(x, y, z = 0, dist = 2200) {
+    if (!this.camera) return;
 
-    // 创建新的目标点
-    const newTarget = new THREE.Vector3(targetX, 0, targetZ);
+    const target = new THREE.Vector3(x, z || 0, y); // Three.js Z 对应仿真的 Y
+    const distance = Math.max(600, dist);
+    const dir = new THREE.Vector3(0.6, 0.75, 0.9).normalize().multiplyScalar(distance);
 
-    // 计算当前相机相对目标的偏移
-    const offset = new THREE.Vector3().subVectors(this.camera.position, newTarget);
-
-    // 如果偏移太小（相机离目标太近），设置一个默认距离
-    if (offset.length() < 1000) {
-      offset.set(5000, 8000, 5000);
-    }
-
-    // 设置新的相机位置
-    this.camera.position.copy(newTarget).add(offset);
-    this.camera.lookAt(newTarget);
+    this.camera.position.copy(target).add(dir);
+    this.camera.lookAt(target);
   }
 
   destroy() {

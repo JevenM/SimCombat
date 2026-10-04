@@ -18,8 +18,14 @@ class SimCombatApp {
     // 回放状态
     this.replayInterval = null;
     this.replayIndex = 0;
+    this.replayActive = false;
     this.replayPlaying = false;
     this.replaySpeed = 1; // 默认1倍速
+
+    // 单位实时状态面板：当前查看阵营 / 视角跟随阵营
+    this.statusSide = 'red';
+    this.followSide = null;
+    this._unitPickerSig = '';
 
     this.init();
   }
@@ -302,6 +308,12 @@ class SimCombatApp {
       this.airDuel.update(state.duel);
     }
 
+    // 单位实时状态面板：红蓝方单位下拉 + 自动选中（避免面板空着）
+    this.refreshUnitPicker(state.entities);
+
+    // 视角跟随：锁定某阵营时，2D 地图中心随之移动
+    this.updateFollowView(state.entities);
+
     // 更新攻击线位置（跟随移动的单位）
     if (this.attackAnimations && state.isRunning) {
       this.attackAnimations.updateAttackLinePositions(state.entities);
@@ -326,7 +338,7 @@ class SimCombatApp {
       if (entity) {
         this.selectedEntity = entity;
         // 实时更新侧边栏显示
-        this.showEntityInfo(entity);
+        this.showEntityInfo(entity, this.getDuelParty(entity, state.duel));
       } else {
         this.selectedEntity = null;
         document.getElementById('selectedEntity').innerHTML = '<p class="no-selection">单位已销毁</p>';
@@ -674,6 +686,9 @@ class SimCombatApp {
     document.getElementById('btnViewRed')?.addEventListener('click', () => this.focusOnSide('red'));
     document.getElementById('btnViewBlue')?.addEventListener('click', () => this.focusOnSide('blue'));
 
+    // 单位实时状态：红蓝方切换 / 单位下拉 / 上一个下一个 / 定位
+    this.initUnitStatusControls();
+
     document.getElementById('fileInput')?.addEventListener('change', (e) => {
       this.handleFileUpload(e.target.files[0]);
     });
@@ -786,6 +801,18 @@ class SimCombatApp {
 
   onEntityClick(entity) {
     this.selectedEntity = entity;
+
+    // 同步右侧「单位实时状态」面板：跟随被点击单位的阵营，并更新下拉选中项
+    if (entity.side && entity.side !== this.statusSide) {
+      this.statusSide = entity.side;
+      this._unitPickerSig = ''; // 触发下拉框按新阵营重建
+      this.updateStatusSideButtons();
+      this.applyUnitSelectTheme();
+    }
+    const sel = document.getElementById('unitSelect');
+    if (sel && entity.id) sel.value = entity.id;
+    this.showEntityInfo(entity, this.getDuelParty(entity, this.state?.duel));
+
     // 点击时打开悬浮详情窗口
     const layer = this.map2d.entityLayers.get(entity.id);
     if (layer) {
@@ -810,6 +837,7 @@ class SimCombatApp {
     // 重置统计（交战计数、伤害曲线、已处理事件），保证重复播放口径一致
     if (this.statsPanel) this.statsPanel.reset();
     this._replayTrails = new Map(); // 重放时重新累积航迹
+    this.replayActive = true;       // 回放期间「单位实时状态」按回放帧取单位
 
     const replayBar = document.getElementById('replayBar');
     const replaySlider = document.getElementById('replaySlider');
@@ -1053,6 +1081,9 @@ class SimCombatApp {
     this.view3d?.updateDuelVisuals?.(frame.missiles || [], trails, entities);
     this.map2d?.updateDuelAircraft?.(frame.duelMode ? entities : []);
 
+    // 视角跟随：回放时同样锁定指定阵营
+    this.updateFollowView(entities);
+
     // 各面板数据与实时推演保持同一口径
     this.syncPanelsForReplay(frame, entities);
 
@@ -1142,12 +1173,15 @@ class SimCombatApp {
       this.airDuel.update(frame.duel);
     }
 
+    // 单位实时状态面板：回放帧同样支持红蓝方切换 + 自动选中
+    this.refreshUnitPicker(entities);
+
     // 选中单位侧栏随回放刷新
     if (this.selectedEntity) {
       const current = entities.find(e => e.id === this.selectedEntity.id);
       if (current) {
         this.selectedEntity = current;
-        this.showEntityInfo(current);
+        this.showEntityInfo(current, this.getDuelParty(current, frame.duel));
       }
     }
 
@@ -1163,9 +1197,10 @@ class SimCombatApp {
     }
   }
 
-  showEntityInfo(entity) {
+  showEntityInfo(entity, party = null) {
     const container = document.getElementById('selectedEntity');
-    const hpPercent = Math.round(entity.hp / entity.maxHp * 100);
+    const maxHp = entity.maxHp || Math.max(entity.hp || 0, 1);
+    const hpPercent = Math.round((entity.hp || 0) / maxHp * 100);
 
     // 计算速度 (km/h)
     const speedKmh = entity.speed ? Math.round(entity.speed * 3.6 * 10) / 10 : 0;
@@ -1181,7 +1216,7 @@ class SimCombatApp {
 
     container.innerHTML = `
       <div class="entity-info" style="font-size: 12px;">
-        <div class="entity-header ${entity.side}" style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(233,69,96,0.2); border-radius:4px; margin-bottom:10px; border:1px solid ${entity.side === 'red' ? '#ff6b6b' : '#4dabf7'};">
+        <div class="entity-header ${entity.side}" style="display:flex; justify-content:space-between; padding:6px 10px; background:${entity.side === 'red' ? 'rgba(218,54,51,0.22)' : 'rgba(31,111,235,0.22)'}; border-radius:4px; margin-bottom:10px; border:1px solid ${entity.side === 'red' ? '#ff6b6b' : '#4dabf7'};">
           <span style="font-weight:bold;">${entity.name || entity.id}</span>
           <span style="opacity:0.8;">${entity.equipmentType}</span>
         </div>
@@ -1207,6 +1242,24 @@ class SimCombatApp {
           </div>
         </div>
 
+        ${party ? `
+        <!-- 空战机动与挂载（仅空战对决时有数据） -->
+        <div style="margin-bottom:12px; padding:8px; background:#0d1117; border-radius:4px;">
+          <div style="color:#58a6ff; font-weight:bold; margin-bottom:6px;">✈️ 空战状态</div>
+          <div style="display:grid; grid-template-columns:auto 1fr; gap:4px 8px;">
+            <span style="color:#888;">当前机动:</span>
+            <span style="color:#f0883e;">${party.maneuverLabel || '机动中'}${party.alive === false ? '（已击落）' : ''}</span>
+            <span style="color:#888;">空空导弹:</span><span>${party.missiles ?? '-'} 枚</span>
+            <span style="color:#888;">干扰弹:</span><span>${party.flares ?? '-'} 枚</span>
+            <span style="color:#888;">俯仰/滚转:</span>
+            <span>${Math.round(party.pitch ?? entity.pitch ?? 0)}° / ${Math.round(party.roll ?? entity.roll ?? 0)}°</span>
+            <span style="color:#888;">锁定告警:</span>
+            <span style="color:${party.lockedBy ? '#ff6b6b' : '#888'};">
+              ${party.lockedBy ? `⚠️ 被 ${party.incomingCount || 1} 枚导弹锁定` : '无'}
+            </span>
+          </div>
+        </div>` : ''}
+
         <!-- 火力与探测 -->
         <div style="margin-bottom:12px; padding:8px; background:#0d1117; border-radius:4px;">
           <div style="color:#ff6b6b; font-weight:bold; margin-bottom:6px;">🎯 火力与探测</div>
@@ -1223,7 +1276,7 @@ class SimCombatApp {
           <div style="color:#51cf66; font-weight:bold; margin-bottom:6px;">❤️ 生命值</div>
           <div class="hp-bar" style="position:relative; height:18px; background:#30363d; border-radius:3px; overflow:hidden;">
             <span class="hp-fill" style="position:absolute; height:100%; width:${hpPercent}%; background:${hpPercent > 50 ? '#28a745' : hpPercent > 25 ? '#ffc107' : '#dc3545'}; transition:width 0.3s;"></span>
-            <span class="hp-text" style="position:absolute; top:0; left:0; right:0; text-align:center; font-size:10px; line-height:18px; color:#fff; text-shadow:0 0 2px #000;">${Math.round(entity.hp)}/${entity.maxHp}</span>
+            <span class="hp-text" style="position:absolute; top:0; left:0; right:0; text-align:center; font-size:10px; line-height:18px; color:#fff; text-shadow:0 0 2px #000;">${Math.round(entity.hp || 0)}/${maxHp}</span>
           </div>
         </div>
       </div>
@@ -2046,6 +2099,7 @@ class SimCombatApp {
     const selPanel = document.getElementById('selectedEntity');
     if (selPanel) selPanel.innerHTML = '<p class="no-selection">未选择单位</p>';
     if (this.statsPanel) this.statsPanel.reset();
+    this.resetUnitStatusPanel();
 
     // 广播到达前先清空本地状态，避免画面残留
     if (this.state) {
@@ -2080,8 +2134,10 @@ class SimCombatApp {
     // 清空状态
     this.state = null;
     this.replay = null;
+    this.replayActive = false;
     this.replayInitialScene = null;
     this.replayFinalResult = null;
+    this.resetUnitStatusPanel();
 
     // 关闭回放控制条
     const replayBar = document.getElementById('replayBar');
@@ -2131,38 +2187,326 @@ class SimCombatApp {
     // 可在需要时实现
   }
 
-  // 聚焦到指定阵营的位置
+  // ========== 单位实时状态面板（红蓝方切换） ==========
+
+  /** 当前可见单位：回放中取当前回放帧，否则取服务端状态 */
+  viewEntities() {
+    if (this.replayActive && this.replay?.length) {
+      const frame = this.replay[this.replayIndex];
+      if (frame?.entities?.length) {
+        // 兼容旧回放文件：只有 type 字段时补齐 equipmentType，保证下拉显示一致
+        return frame.entities.map(e => ({ ...e, equipmentType: e.equipmentType || e.type }));
+      }
+    }
+    return this.state?.entities || [];
+  }
+
+  /** 指定阵营的单位列表 */
+  unitsOfSide(side, entities = this.viewEntities()) {
+    return entities.filter(e => e.side === side);
+  }
+
+  /** 一组单位的中心点、高度均值与散布范围（用于选缩放等级） */
+  sideExtent(list) {
+    let sumX = 0, sumY = 0, sumZ = 0;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const e of list) {
+      sumX += e.x; sumY += e.y; sumZ += (e.z || 0);
+      minX = Math.min(minX, e.x); maxX = Math.max(maxX, e.x);
+      minY = Math.min(minY, e.y); maxY = Math.max(maxY, e.y);
+    }
+    const cx = sumX / list.length;
+    const cy = sumY / list.length;
+    let spread = 0;
+    for (const e of list) spread = Math.max(spread, Math.hypot(e.x - cx, e.y - cy));
+    return { cx, cy, cz: sumZ / list.length, minX, maxX, minY, maxY, spread };
+  }
+
+  /** 空战对决时的阵营态势快照（含弹药/机动/锁定告警） */
+  getDuelParty(entity, duel) {
+    if (!entity || !duel?.parties) return null;
+    const party = duel.parties[entity.side];
+    return party && party.id === entity.id ? party : null;
+  }
+
+  initUnitStatusControls() {
+    document.getElementById('btnStatusRed')?.addEventListener('click', () => this.setStatusSide('red'));
+    document.getElementById('btnStatusBlue')?.addEventListener('click', () => this.setStatusSide('blue'));
+    document.getElementById('unitSelect')?.addEventListener('change', (e) => {
+      this.selectUnitById(e.target.value);
+    });
+    document.getElementById('btnPrevUnit')?.addEventListener('click', () => this.cycleUnit(-1));
+    document.getElementById('btnNextUnit')?.addEventListener('click', () => this.cycleUnit(1));
+    document.getElementById('btnLocateUnit')?.addEventListener('click', () => {
+      if (this.selectedEntity) this.focusOnEntity(this.selectedEntity);
+      else this.addLog('请先在上方选择一个单位', 'warning');
+    });
+    this.updateStatusSideButtons();
+    this.applyUnitSelectTheme();
+  }
+
+  updateStatusSideButtons() {
+    document.getElementById('btnStatusRed')?.classList.toggle('active', this.statusSide === 'red');
+    document.getElementById('btnStatusBlue')?.classList.toggle('active', this.statusSide === 'blue');
+  }
+
+  /** 下拉框按阵营着色，与空战面板的机型下拉保持同一视觉 */
+  applyUnitSelectTheme() {
+    const sel = document.getElementById('unitSelect');
+    if (!sel) return;
+    sel.classList.toggle('side-red', this.statusSide === 'red');
+    sel.classList.toggle('side-blue', this.statusSide === 'blue');
+  }
+
+  /**
+   * 切换「单位实时状态」面板的阵营，并自动选中该阵营的第一个存活单位
+   * @param {string} side - 'red' | 'blue'
+   */
+  setStatusSide(side, { select = true } = {}) {
+    this.statusSide = side;
+    this._unitPickerSig = '';
+    this.updateStatusSideButtons();
+    this.applyUnitSelectTheme();
+
+    // 先按新阵营重建下拉，再选中单位；否则 select.value 会因为缺少该选项而被置空
+    this.refreshUnitPicker(this.viewEntities());
+
+    if (!select) return;
+    const list = this.unitsOfSide(side);
+    if (list.length === 0) {
+      const panel = document.getElementById('selectedEntity');
+      if (panel) panel.innerHTML = `<p class="no-selection">${side === 'red' ? '红' : '蓝'}方暂无单位</p>`;
+      return;
+    }
+    // 已选单位属于该阵营则保留，否则切到第一个存活单位
+    const keep = list.find(e => e.id === this.selectedEntity?.id);
+    const alive = list.filter(e => (e.hp ?? 1) > 0);
+    this.selectUnitById((keep || alive[0] || list[0]).id, { silent: true });
+  }
+
+  selectUnitById(id, { silent = false } = {}) {
+    if (!id) return;
+    const entity = this.viewEntities().find(e => e.id === id);
+    if (!entity) return;
+
+    this.selectedEntity = entity;
+    if (entity.side && entity.side !== this.statusSide) {
+      this.statusSide = entity.side;
+      this._unitPickerSig = '';
+      this.updateStatusSideButtons();
+      this.applyUnitSelectTheme();
+      // 换阵营后立刻重建下拉，否则 select.value 会因为缺少该选项而被置空
+      this.refreshUnitPicker(this.viewEntities());
+    }
+    const sel = document.getElementById('unitSelect');
+    if (sel && sel.value !== id) sel.value = id;
+
+    // 静默选中（如自动选中）不弹浮窗，避免打断地图操作
+    this.map2d?.highlightEntity?.(id, !silent);
+    const duel = this.replayActive
+      ? this.replay?.[this.replayIndex]?.duel
+      : this.state?.duel;
+    this.showEntityInfo(entity, this.getDuelParty(entity, duel));
+    if (!silent) this.addLog(`已切换到单位 ${entity.name || entity.id}`, 'info');
+  }
+
+  /** 在当前阵营内循环切换单位 */
+  cycleUnit(step) {
+    const list = this.unitsOfSide(this.statusSide);
+    if (list.length === 0) {
+      this.addLog(`${this.statusSide === 'red' ? '红' : '蓝'}方没有单位`, 'warning');
+      return;
+    }
+    const idx = list.findIndex(e => e.id === this.selectedEntity?.id);
+    const base = idx < 0 ? 0 : idx + step;
+    const next = list[((base % list.length) + list.length) % list.length];
+    this.selectUnitById(next.id);
+  }
+
+  /**
+   * 刷新单位下拉：成员变化时重建选项，平时只刷新 HP/状态文字
+   * 没有选中单位且阵营内有单位时自动选中，避免面板一片空白
+   */
+  refreshUnitPicker(entities = []) {
+    const sel = document.getElementById('unitSelect');
+    if (!sel) return;
+
+    const duel = this.replayActive
+      ? this.replay?.[this.replayIndex]?.duel
+      : this.state?.duel;
+    const list = entities.filter(e => e.side === this.statusSide);
+    const sig = list.map(e => e.id).join(',');
+
+    if (sig !== this._unitPickerSig) {
+      this._unitPickerSig = sig;
+      sel.innerHTML = list.length === 0
+        ? '<option value="">-- 暂无单位 --</option>'
+        : list.map(e => `<option value="${e.id}">${this.unitLabel(e, this.getDuelParty(e, duel))}</option>`).join('');
+    }
+
+    // 血量 / 机动等实时字段随时刷新（成员不变时只改文字，不重建 DOM）
+    for (const e of list) {
+      const opt = sel.querySelector(`option[value="${CSS.escape ? CSS.escape(e.id) : e.id}"]`);
+      if (opt) opt.textContent = this.unitLabel(e, this.getDuelParty(e, duel));
+    }
+
+    if (list.length === 0) return;
+
+    // 选中项：已选单位优先 -> 下拉当前值 -> 该阵营第一个存活单位（保证面板永远有内容）
+    const selectedId = this.selectedEntity?.id;
+    let targetId = null;
+    if (selectedId && list.some(e => e.id === selectedId)) targetId = selectedId;
+    else if (list.some(e => e.id === sel.value)) targetId = sel.value;
+    else targetId = (list.filter(e => (e.hp ?? 1) > 0)[0] || list[0]).id;
+
+    if (targetId && sel.value !== targetId) sel.value = targetId;
+
+    const current = list.find(e => e.id === targetId);
+    if (current && current.id !== selectedId) {
+      this.selectedEntity = current;
+      this.showEntityInfo(current, this.getDuelParty(current, duel));
+    }
+  }
+
+  /** 下拉框中的单位显示文本（型号 + 血量 + 空战机动/锁定告警） */
+  unitLabel(e, party = null) {
+    const alive = (e.hp ?? 1) > 0;
+    if (!alive) return `✖ ${e.name || e.id} · 已损毁`;
+    const extra = party
+      ? ` · ${party.maneuverLabel || '机动中'}${party.lockedBy ? ' ⚠️' : ''}`
+      : '';
+    return `${e.name || e.id} · ${e.equipmentType} · ${Math.round(e.hp)}/${e.maxHp ?? '-'}HP${extra}`;
+  }
+
+  /** 清空单位状态面板（清空画布 / 回放结束后调用） */
+  resetUnitStatusPanel() {
+    this.selectedEntity = null;
+    this._unitPickerSig = '';
+    this.followSide = null;
+    this.view3d?.setFollowSide?.(null);
+    this.syncViewButtons();
+
+    const sel = document.getElementById('unitSelect');
+    if (sel) sel.innerHTML = '<option value="">-- 暂无单位 --</option>';
+    const panel = document.getElementById('selectedEntity');
+    if (panel) {
+      panel.innerHTML = '<p class="no-selection">💡 选择上方阵营与单位查看实时作战状态<br/>推演与回放中均可切换红蓝方</p>';
+    }
+  }
+
+  // ========== 视角跳转 / 跟随 ==========
+
+  syncViewButtons() {
+    const labels = {
+      btnViewRed: { normal: '🔴 红方位置', follow: '⏹ 取消跟随红方' },
+      btnViewBlue: { normal: '🔵 蓝方位置', follow: '⏹ 取消跟随蓝方' }
+    };
+    for (const [id, side] of [['btnViewRed', 'red'], ['btnViewBlue', 'blue']]) {
+      const btn = document.getElementById(id);
+      if (!btn) continue;
+      const active = this.followSide === side;
+      btn.classList.toggle('active', active);
+      btn.textContent = active ? labels[id].follow : labels[id].normal;
+    }
+  }
+
+  /** 2D/3D 视角跳转到给定的仿真坐标范围 */
+  jumpToSimArea(ext, unitCount = 1) {
+    const map = this.map2d?.map;
+    if (map && typeof L !== 'undefined' && this.map2d.simToGeo) {
+      const sw = this.map2d.simToGeo(ext.minX, ext.minY);
+      const ne = this.map2d.simToGeo(ext.maxX, ext.maxY);
+      try {
+        if (unitCount > 1) {
+          map.flyToBounds(L.latLngBounds([sw.lat, sw.lng], [ne.lat, ne.lng]).pad(0.4), {
+            maxZoom: 15, duration: 0.6
+          });
+        } else {
+          // 单个单位：拉近到能看清的程度
+          map.flyTo([sw.lat, sw.lng], Math.min(16, Math.max(map.getZoom() + 2, 14)), { duration: 0.6 });
+        }
+      } catch (err) {
+        const center = { lat: (sw.lat + ne.lat) / 2, lng: (sw.lng + ne.lng) / 2 };
+        map.setView([center.lat, center.lng], unitCount > 1 ? 13 : 15);
+      }
+    }
+
+    const dist = Math.max(1600, Math.min(9000, ext.spread * 2.2 + 1500));
+    this.view3d?.focusOnPosition(ext.cx, ext.cy, ext.cz, dist);
+  }
+
+  /** 视角跳转到单个单位 */
+  focusOnEntity(entity) {
+    const map = this.map2d?.map;
+    if (map && this.map2d.simToGeo) {
+      const geo = this.map2d.simToGeo(entity.x, entity.y);
+      map.flyTo([geo.lat, geo.lng], Math.min(16, Math.max(map.getZoom() + 1, 14)), { duration: 0.5 });
+    }
+    this.view3d?.focusOnPosition(entity.x, entity.y, entity.z || 0, 1800);
+    this.addLog(`视角已定位到 ${entity.name || entity.id}`, 'info');
+  }
+
+  /**
+   * 聚焦到指定阵营的位置并开始跟随；再次点击同一按钮取消跟随
+   */
   focusOnSide(side) {
-    if (!this.state || !this.state.entities || this.state.entities.length === 0) {
-      this.addLog('没有可查看的单位', 'warning');
+    const entities = this.viewEntities();
+    if (entities.length === 0) {
+      this.addLog('当前没有可查看的单位', 'warning');
       return;
     }
-
-    // 获取指定阵营的所有单位
-    const sideEntities = this.state.entities.filter(e => e.side === side);
-    if (sideEntities.length === 0) {
-      this.addLog(`${side === 'red' ? '红方' : '蓝方'}没有单位`, 'warning');
-      return;
-    }
-
-    // 计算阵营中心点
-    let totalX = 0, totalY = 0;
-    for (const entity of sideEntities) {
-      totalX += entity.x;
-      totalY += entity.y;
-    }
-    const centerX = totalX / sideEntities.length;
-    const centerY = totalY / sideEntities.length;
-
-    // 移动2D地图视角
-    const geoPos = this.map2d.simToGeo(centerX, centerY);
-    this.map2d.map.setView([geoPos.lat, geoPos.lng], 12);
-
-    // 移动3D相机视角
-    this.view3d.focusOnPosition(centerX, centerY);
 
     const sideName = side === 'red' ? '红方' : '蓝方';
-    this.addLog(`视角已移动到${sideName}位置 (${Math.round(centerX)}, ${Math.round(centerY)})`, 'info');
+    let list = this.unitsOfSide(side, entities).filter(e => (e.hp ?? 1) > 0);
+    if (list.length === 0) list = this.unitsOfSide(side, entities);
+    if (list.length === 0) {
+      this.addLog(`${sideName}没有单位`, 'warning');
+      return;
+    }
+
+    // 再次点击同一按钮 -> 取消跟随
+    if (this.followSide === side) {
+      this.clearFollowSide();
+      this.addLog(`已取消对${sideName}的视角跟随`, 'info');
+      return;
+    }
+
+    const ext = this.sideExtent(list);
+    this.jumpToSimArea(ext, list.length);
+
+    // 持续跟随（3D 相机 / 2D 地图中心），并禁用双机跟随避免两套相机互相打断
+    this.followSide = side;
+    this.view3d?.setFollowSide?.(side);
+    if (this.airDuel?.following) {
+      this.airDuel.following = false;
+      if (this.airDuel.el?.btnFollow) this.airDuel.el.btnFollow.textContent = '🎥 双机跟随';
+    }
+    this.syncViewButtons();
+
+    // 同步右侧状态面板到该阵营
+    this.setStatusSide(side, { select: true });
+
+    this.addLog(
+      `视角跳转到${sideName}位置 (${Math.round(ext.cx)}, ${Math.round(ext.cy)})，跟随 ${list.length} 个单位`,
+      'info'
+    );
+  }
+
+  /** 取消视角跟随（双机跟随开启时也会调用） */
+  clearFollowSide() {
+    this.followSide = null;
+    this.view3d?.setFollowSide?.(null);
+    this.syncViewButtons();
+  }
+
+  /** 跟随状态下，2D 地图中心随目标阵营移动 */
+  updateFollowView(entities) {
+    if (!this.followSide || !this.map2d?.map) return;
+    const list = entities.filter(e => e.side === this.followSide && (e.hp ?? 1) > 0);
+    if (list.length === 0) return;
+    const ext = this.sideExtent(list);
+    const geo = this.map2d.simToGeo(ext.cx, ext.cy);
+    this.map2d.map.panTo([geo.lat, geo.lng], { animate: false });
   }
 
   // 命令实体移动

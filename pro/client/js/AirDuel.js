@@ -261,6 +261,10 @@ class AirDuel {
   toggleFollow() {
     this.following = !this.following;
     this.app.view3d?.setFollowDuel?.(this.following);
+    if (this.following) {
+      // 双机跟随优先于「视角跳转」的单阵营跟随，避免两套相机互相拉扯
+      this.app.clearFollowSide?.();
+    }
     if (this.el.btnFollow) {
       this.el.btnFollow.textContent = this.following ? '🎥 跟随中' : '🎥 双机跟随';
     }
